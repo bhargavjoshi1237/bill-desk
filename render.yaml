@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: bill-desk
+    runtime: docker
+    # A persistent disk needs a paid instance; it keeps the SQLite database and
+    # uploaded documents across deploys and restarts.
+    plan: starter
+    healthCheckPath: /up
+    disk:
+      name: storage
+      mountPath: /var/www/html/storage
+      sizeGB: 1
+    envVars:
+      - key: APP_KEY
+        sync: false # paste the output of: php artisan key:generate --show
+      - key: APP_URL
+        sync: false # e.g. https://bill-desk.onrender.com
+      - key: APP_NAME
+        value: Bill Payment Desk
+      - key: APP_TIMEZONE
+        value: Asia/Kolkata
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: DB_DATABASE
+        value: /var/www/html/storage/database/database.sqlite
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: SEED_DATABASE
+        value: "false"
