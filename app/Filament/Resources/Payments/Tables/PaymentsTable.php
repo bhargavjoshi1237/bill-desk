@@ -13,9 +13,9 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -78,11 +78,9 @@ class PaymentsTable
                 SelectFilter::make('received_by')
                     ->label(__('Received by'))
                     ->relationship('receiver', 'name'),
-            ], layout: FiltersLayout::AboveContentCollapsible)
-            ->filtersFormColumns(['md' => 2, 'xl' => 4])
-            ->headerActions([
-                ExportTableAction::make('payments', fn (): array => self::exportColumns()),
             ])
+            ->filtersFormColumns(['md' => 2, 'xl' => 4])
+            ->filtersFormWidth(Width::FourExtraLarge)
             ->recordActions([
                 PrintReceiptAction::make()->iconButton(),
                 ActionGroup::make([
@@ -90,10 +88,12 @@ class PaymentsTable
                     DeleteAction::make(),
                 ]),
             ])
+            // Export sits in the toolbar with search, filters and columns, so the table has one header row.
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
+                ExportTableAction::make('payments', fn (): array => self::exportColumns()),
             ])
             ->striped()
             ->paginated([25, 50, 100, 'all']);

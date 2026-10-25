@@ -87,7 +87,8 @@ class CustomersTable
                     ->options(fn (): array => Customer::query()->whereNotNull('city')->distinct()->orderBy('city')->pluck('city', 'city')->all())
                     ->searchable(),
             ])
-            ->headerActions([
+            // In the toolbar rather than the header, so the table has one header row.
+            ->toolbarActions([
                 ExportTableAction::make('customers', fn (): array => [
                     __('Customer') => fn (Customer $c) => $c->name,
                     __('Mobile') => fn (Customer $c) => $c->mobile,

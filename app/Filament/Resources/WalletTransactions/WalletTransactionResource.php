@@ -97,7 +97,8 @@ class WalletTransactionResource extends Resource
                     ->label(__('Type'))
                     ->options(WalletTransactionType::class),
             ])
-            ->headerActions([
+            // In the toolbar rather than the header, so the table has one header row.
+            ->toolbarActions([
                 ExportTableAction::make('wallet-transactions', fn (): array => [
                     __('Date') => fn (WalletTransaction $t) => $t->transaction_date,
                     __('Portal') => fn (WalletTransaction $t) => $t->portal?->name,

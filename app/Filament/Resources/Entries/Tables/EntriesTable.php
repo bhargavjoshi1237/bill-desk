@@ -16,9 +16,9 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\Indicator;
 use Filament\Tables\Filters\SelectFilter;
@@ -160,12 +160,10 @@ class EntriesTable
                     ->label(__('Created by'))
                     ->relationship('creator', 'name')
                     ->columnSpan(['md' => 2, 'xl' => 1]),
-            ], layout: FiltersLayout::AboveContentCollapsible)
+            ])
             // Two even rows on desktop: dates, status, portal | bank, customer, created by.
             ->filtersFormColumns(['md' => 2, 'xl' => 4])
-            ->headerActions([
-                ExportTableAction::make('entries', fn (): array => self::exportColumns()),
-            ])
+            ->filtersFormWidth(Width::FourExtraLarge)
             ->recordActions([
                 RecordPaymentAction::make()->iconButton(),
                 ActionGroup::make([
@@ -176,10 +174,12 @@ class EntriesTable
                     DeleteAction::make(),
                 ]),
             ])
+            // Export sits in the toolbar with search, filters and columns, so the table has one header row.
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
+                ExportTableAction::make('entries', fn (): array => self::exportColumns()),
             ])
             ->striped()
             ->paginated([25, 50, 100, 'all'])

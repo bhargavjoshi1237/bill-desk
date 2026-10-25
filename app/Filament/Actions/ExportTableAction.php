@@ -11,7 +11,7 @@ use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * "Export" button for a table header: downloads exactly what the table shows
+ * "Export" button for a table toolbar: downloads exactly what the table shows
  * (current filters, search and sort) as Excel or CSV.
  */
 final class ExportTableAction
