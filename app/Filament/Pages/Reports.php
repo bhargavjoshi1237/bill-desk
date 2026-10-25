@@ -60,8 +60,7 @@ class Reports extends BaseDashboard
                         ->label(__('Group by'))
                         ->options(['auto' => __('Automatic'), ...ReportService::groupings()])
                         ->default('auto')
-                        ->selectablePlaceholder(false)
-                        ->native(false),
+                        ->selectablePlaceholder(false),
                 ])
                 ->columns(4)
                 ->columnSpanFull(),

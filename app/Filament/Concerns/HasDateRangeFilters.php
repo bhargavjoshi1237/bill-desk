@@ -31,7 +31,6 @@ trait HasDateRangeFilters
                 ->options(DateRange::presets())
                 ->default($defaultPreset)
                 ->selectablePlaceholder(false)
-                ->native(false)
                 ->live()
                 ->afterStateUpdated(function (?string $state, Set $set): void {
                     // A preset brings its own dates; clear typed ones so the placeholders show them.
