@@ -12,7 +12,7 @@ services:
       sizeGB: 1
     envVars:
       - key: APP_KEY
-        sync: false # paste the output of: php artisan key:generate --show
+        generateValue: true # the entrypoint adds Laravel's "base64:" prefix
       - key: APP_URL
         sync: false # e.g. https://bill-desk.onrender.com
       - key: APP_NAME

@@ -3,6 +3,22 @@ set -e
 
 cd /var/www/html
 
+# Laravel needs "base64:" + 32 random bytes. Accept a bare base64 value too (what Render's
+# "Generate" button produces) and refuse to start on anything else, instead of serving 500s.
+case "${APP_KEY:-}" in
+    base64:*) KEY_BYTES=$(printf '%s' "${APP_KEY#base64:}" | base64 -d 2>/dev/null | wc -c) ;;
+    "") KEY_BYTES=0 ;;
+    *)
+        KEY_BYTES=$(printf '%s' "$APP_KEY" | base64 -d 2>/dev/null | wc -c)
+        [ "$KEY_BYTES" -eq 32 ] && export APP_KEY="base64:$APP_KEY"
+        ;;
+esac
+if [ "$KEY_BYTES" -ne 32 ]; then
+    echo "APP_KEY is missing or invalid. Set it to the output of 'php artisan key:generate --show'" >&2
+    echo "(it looks like base64:xxxxxxxx...=), then redeploy." >&2
+    exit 1
+fi
+
 # A persistent disk mounted over storage/ starts empty, so recreate the layout.
 mkdir -p storage/app/private storage/app/public storage/logs \
     storage/framework/cache/data storage/framework/sessions storage/framework/views
