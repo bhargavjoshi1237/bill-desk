@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Entries\Pages;
 
+use App\Filament\Concerns\HasFormContentWidth;
 use App\Filament\Resources\Entries\EntryResource;
 use App\Models\Entry;
 use App\Support\Money;
@@ -10,6 +11,8 @@ use Filament\Resources\Pages\CreateRecord;
 
 class CreateEntry extends CreateRecord
 {
+    use HasFormContentWidth;
+
     protected static string $resource = EntryResource::class;
 
     /**

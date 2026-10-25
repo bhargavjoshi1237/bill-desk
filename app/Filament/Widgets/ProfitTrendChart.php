@@ -20,7 +20,7 @@ class ProfitTrendChart extends ChartWidget
 
     protected ?string $pollingInterval = null;
 
-    protected int|string|array $columnSpan = ['md' => 2, 'xl' => 2];
+    protected int|string|array $columnSpan = ['md' => 2, 'xl' => 3];
 
     protected ?string $maxHeight = '300px';
 

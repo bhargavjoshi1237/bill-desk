@@ -1,0 +1,54 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+/*
+ * Admin panel theme: white cards with a hairline border and a soft shadow on
+ * a slate page, a solid sidebar, and tabular figures for money. Colors come
+ * from the panel (Indigo primary, Slate gray), so these rules only use the
+ * primary/gray scales and work in light and dark mode.
+ */
+
+@theme {
+    --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06);
+}
+
+/* Amounts line up digit-for-digit in stat cards, entries and table columns. */
+.fi-main {
+    @apply tabular-nums;
+}
+
+/* Frame: hairline topbar and a solid sidebar panel on desktop. */
+.fi-topbar {
+    @apply shadow-none ring-gray-200 dark:ring-white/10;
+}
+
+.fi-sidebar {
+    @apply lg:border-e lg:border-gray-200 lg:bg-white dark:lg:border-white/10 dark:lg:bg-gray-900;
+}
+
+.fi-sidebar-group-label {
+    @apply text-xs font-semibold text-gray-400 dark:text-gray-500;
+
+    /* Uppercase and letter spacing suit Latin labels but break up Devanagari. */
+    &:lang(en) {
+        @apply tracking-wider uppercase;
+    }
+}
+
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    @apply bg-primary-50 dark:bg-primary-400/10;
+}
+
+/* One card style for sections, stat cards, charts and tables. */
+.fi-section:not(.fi-section-not-contained):not(.fi-aside),
+.fi-section.fi-aside:not(.fi-section-not-contained) > .fi-section-content-ctn,
+.fi-wi-stats-overview-stat,
+.fi-ta-ctn {
+    @apply shadow-card ring-gray-200 dark:shadow-none dark:ring-white/10;
+}
+
+.fi-section > .fi-section-header > .fi-icon:not(.fi-color) {
+    @apply text-primary-500 dark:text-primary-400;
+}

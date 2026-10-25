@@ -154,12 +154,15 @@ class EntriesTable
                 SelectFilter::make('customer_id')
                     ->label(__('Customer'))
                     ->relationship('customer', 'name')
-                    ->searchable(),
+                    ->searchable()
+                    ->columnSpan(['xl' => 2]),
                 SelectFilter::make('created_by')
                     ->label(__('Created by'))
-                    ->relationship('creator', 'name'),
+                    ->relationship('creator', 'name')
+                    ->columnSpan(['md' => 2, 'xl' => 1]),
             ], layout: FiltersLayout::AboveContentCollapsible)
-            ->filtersFormColumns(['md' => 3, 'xl' => 6])
+            // Two even rows on desktop: dates, status, portal | bank, customer, created by.
+            ->filtersFormColumns(['md' => 2, 'xl' => 4])
             ->headerActions([
                 ExportTableAction::make('entries', fn (): array => self::exportColumns()),
             ])

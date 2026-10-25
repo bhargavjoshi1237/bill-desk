@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Filament\Widgets\Concerns\ResolvesDateRange;
 use App\Reports\ReportService;
+use App\Support\GridColumns;
 use App\Support\Money;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
@@ -27,9 +28,12 @@ class PeriodStatsOverview extends StatsOverviewWidget
         return __('Summary for :period', ['period' => $this->dateRange()->label()]);
     }
 
+    /**
+     * Admins see 8 stats (two rows of 4), operators 6 (two rows of 3).
+     */
     protected function getColumns(): int
     {
-        return 4;
+        return GridColumns::balanced(count($this->getCachedStats()));
     }
 
     protected function getStats(): array

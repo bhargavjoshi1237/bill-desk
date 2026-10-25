@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Enums\NavigationGroup;
+use App\Filament\Concerns\HasFormContentWidth;
 use App\Support\Settings;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -25,6 +26,8 @@ use UnitEnum;
  */
 class ManageSettings extends Page
 {
+    use HasFormContentWidth;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
     protected static string|UnitEnum|null $navigationGroup = NavigationGroup::Administration;

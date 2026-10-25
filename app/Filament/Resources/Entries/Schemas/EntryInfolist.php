@@ -18,9 +18,48 @@ class EntryInfolist
 {
     public static function configure(Schema $schema): Schema
     {
+        // Net profit is admin-only; the amounts strip fits one row either way.
+        $amountColumns = (auth()->user()?->isAdmin() ?? false) ? 7 : 6;
+
         return $schema
             ->components([
-                Grid::make(['default' => 1, 'lg' => 3])
+                Section::make(__('Amounts'))
+                    ->icon(Heroicon::OutlinedCalculator)
+                    ->schema([
+                        TextEntry::make('bill_amount')
+                            ->label(__('Bill amount'))
+                            ->money(),
+                        TextEntry::make('portal_deduction')
+                            ->label(fn (Entry $record): string => __('Portal deduction (:percent)', ['percent' => Money::percent($record->portal_charge_percent)]))
+                            ->money()
+                            ->color('danger'),
+                        TextEntry::make('service_charge')
+                            ->label(fn (Entry $record): string => __('Service charge (:percent)', ['percent' => Money::percent($record->service_charge_percent)]))
+                            ->money(),
+                        TextEntry::make('total_due')
+                            ->label(__('Total due from customer'))
+                            ->money()
+                            ->weight(FontWeight::Bold),
+                        TextEntry::make('amount_received')
+                            ->label(__('Amount received'))
+                            ->money()
+                            ->color('success'),
+                        TextEntry::make('outstanding')
+                            ->label(__('Outstanding'))
+                            ->money()
+                            ->size(TextSize::Large)
+                            ->weight(FontWeight::Bold)
+                            ->color(fn (Entry $record): string => Money::toPaise($record->outstanding) > 0 ? 'danger' : 'success'),
+                        TextEntry::make('net_profit')
+                            ->label(__('Net profit'))
+                            ->money()
+                            ->weight(FontWeight::Bold)
+                            ->color(fn (Entry $record): string => Money::toPaise($record->net_profit) < 0 ? 'danger' : 'success')
+                            ->visible(fn (): bool => auth()->user()->isAdmin()),
+                    ])
+                    ->columns(['default' => 2, 'md' => 3, 'xl' => $amountColumns])
+                    ->columnSpanFull(),
+                Grid::make(['default' => 1, 'lg' => 2])
                     ->schema([
                         Section::make(__('Entry'))
                             ->icon(Heroicon::OutlinedDocumentText)
@@ -64,7 +103,8 @@ class EntryInfolist
                                     ->placeholder('—')
                                     ->columnSpanFull(),
                             ])
-                            ->columns(2),
+                            ->columns(2)
+                            ->extraAttributes(['class' => 'h-full']),
                         Section::make(__('Customer & card'))
                             ->icon(Heroicon::OutlinedUser)
                             ->schema([
@@ -87,42 +127,8 @@ class EntryInfolist
                                     ->badge()
                                     ->color('gray'),
                             ])
-                            ->columns(2),
-                        Section::make(__('Amounts'))
-                            ->icon(Heroicon::OutlinedCalculator)
-                            ->schema([
-                                TextEntry::make('bill_amount')
-                                    ->label(__('Bill amount'))
-                                    ->money(),
-                                TextEntry::make('portal_deduction')
-                                    ->label(fn (Entry $record): string => __('Portal deduction (:percent)', ['percent' => Money::percent($record->portal_charge_percent)]))
-                                    ->money()
-                                    ->color('danger'),
-                                TextEntry::make('service_charge')
-                                    ->label(fn (Entry $record): string => __('Service charge (:percent)', ['percent' => Money::percent($record->service_charge_percent)]))
-                                    ->money(),
-                                TextEntry::make('total_due')
-                                    ->label(__('Total due from customer'))
-                                    ->money()
-                                    ->weight(FontWeight::Bold),
-                                TextEntry::make('amount_received')
-                                    ->label(__('Amount received'))
-                                    ->money()
-                                    ->color('success'),
-                                TextEntry::make('outstanding')
-                                    ->label(__('Outstanding'))
-                                    ->money()
-                                    ->size(TextSize::Large)
-                                    ->weight(FontWeight::Bold)
-                                    ->color(fn (Entry $record): string => Money::toPaise($record->outstanding) > 0 ? 'danger' : 'success'),
-                                TextEntry::make('net_profit')
-                                    ->label(__('Net profit'))
-                                    ->money()
-                                    ->weight(FontWeight::Bold)
-                                    ->color(fn (Entry $record): string => Money::toPaise($record->net_profit) < 0 ? 'danger' : 'success')
-                                    ->visible(fn (): bool => auth()->user()->isAdmin()),
-                            ])
-                            ->columns(2),
+                            ->columns(2)
+                            ->extraAttributes(['class' => 'h-full']),
                     ])
                     ->columnSpanFull(),
             ]);

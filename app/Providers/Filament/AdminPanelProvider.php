@@ -34,7 +34,9 @@ class AdminPanelProvider extends PanelProvider
             ->brandName(config('app.name'))
             ->colors([
                 'primary' => Color::Indigo,
+                'gray' => Color::Slate,
             ])
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->maxContentWidth(Width::Full)
             ->sidebarCollapsibleOnDesktop()
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])

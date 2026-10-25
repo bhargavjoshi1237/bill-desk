@@ -19,7 +19,7 @@ class CollectionsTrendChart extends ChartWidget
 
     protected ?string $pollingInterval = null;
 
-    protected int|string|array $columnSpan = ['md' => 2, 'xl' => 4];
+    protected int|string|array $columnSpan = ['md' => 2, 'xl' => 3];
 
     protected ?string $maxHeight = '300px';
 

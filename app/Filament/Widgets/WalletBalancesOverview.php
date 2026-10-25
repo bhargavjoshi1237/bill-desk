@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Portal;
+use App\Support\GridColumns;
 use App\Support\Money;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
@@ -31,7 +32,7 @@ class WalletBalancesOverview extends StatsOverviewWidget
 
     protected function getColumns(): int
     {
-        return 4;
+        return GridColumns::balanced(count($this->getCachedStats()));
     }
 
     protected function getStats(): array

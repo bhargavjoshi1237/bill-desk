@@ -20,6 +20,9 @@ class CustomerInfolist
 {
     public static function configure(Schema $schema): Schema
     {
+        // Net profit is admin-only; the summary fits one row either way.
+        $summaryColumns = (auth()->user()?->isAdmin() ?? false) ? 6 : 5;
+
         return $schema
             ->components([
                 Section::make(__('Account summary'))
@@ -56,7 +59,7 @@ class CustomerInfolist
                             ->size(TextSize::Large)
                             ->visible(fn (): bool => auth()->user()->isAdmin()),
                     ])
-                    ->columns(['default' => 2, 'md' => 3, 'xl' => 6])
+                    ->columns(['default' => 2, 'md' => 3, 'xl' => $summaryColumns])
                     ->columnSpanFull(),
                 Grid::make(['default' => 1, 'lg' => 3])
                     ->schema([
@@ -81,7 +84,8 @@ class CustomerInfolist
                                     ->placeholder('—')
                                     ->columnSpanFull(),
                             ])
-                            ->columns(2),
+                            ->columns(2)
+                            ->extraAttributes(['class' => 'h-full']),
                         Section::make(__('Credit cards'))
                             ->icon(Heroicon::OutlinedCreditCard)
                             ->schema([
@@ -93,7 +97,8 @@ class CustomerInfolist
                                             ->state(fn (CustomerCard $record): string => $record->label()),
                                     ])
                                     ->placeholder(__('No cards saved')),
-                            ]),
+                            ])
+                            ->extraAttributes(['class' => 'h-full']),
                         Section::make(__('ID proof'))
                             ->icon(Heroicon::OutlinedIdentification)
                             ->schema([
@@ -114,7 +119,8 @@ class CustomerInfolist
                                     ->listWithLineBreaks()
                                     ->color('primary')
                                     ->hidden(fn (Customer $record): bool => blank($record->id_proof_files)),
-                            ]),
+                            ])
+                            ->extraAttributes(['class' => 'h-full']),
                     ])
                     ->columnSpanFull(),
             ]);

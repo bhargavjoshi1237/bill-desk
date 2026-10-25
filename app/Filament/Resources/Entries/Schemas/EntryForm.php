@@ -47,7 +47,10 @@ class EntryForm
                                 self::initialPaymentSection(),
                             ])
                             ->columnSpan(['lg' => 2]),
-                        self::calculationSection()->columnSpan(['lg' => 1]),
+                        // Stays in view while the longer form on the left scrolls.
+                        self::calculationSection()
+                            ->columnSpan(['lg' => 1])
+                            ->extraAttributes(['class' => 'lg:sticky lg:top-24 lg:self-start']),
                     ])
                     ->columnSpanFull(),
             ]);
@@ -198,10 +201,11 @@ class EntryForm
                 TextInput::make('reference')
                     ->label(__('Portal transaction ID'))
                     ->maxLength(255),
+                // Shares the last row with the transaction ID, so all three rows are full.
                 Textarea::make('notes')
                     ->label(__('Notes'))
                     ->rows(2)
-                    ->columnSpanFull(),
+                    ->columnSpan(['lg' => 2]),
             ])
             ->columns(3);
     }
