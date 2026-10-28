@@ -47,6 +47,7 @@ class PanelPagesTest extends TestCase
     public static function adminOnlyPages(): array
     {
         return [
+            'daily catch-up' => ['/admin/daily-catchup'],
             'portals' => ['/admin/portals'],
             'new portal' => ['/admin/portals/create'],
             'wallet' => ['/admin/wallet-transactions'],

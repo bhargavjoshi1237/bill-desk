@@ -17,14 +17,16 @@ use Spatie\Activitylog\Support\LogOptions;
 
 /**
  * One processed credit card bill payment: we pay the customer's card bill
- * through a portal and the customer repays bill + service charge.
+ * from one portal / account (portal) and the customer pays the bill amount
+ * back into another (receivedPortal). The bill amount nets out, so the
+ * customer owes only the portal charge + our service charge.
  *
  * Only the inputs are fillable. Every derived column (deduction, service
  * charge, totals, outstanding, profit, status) is computed by recalculate(),
  * which runs on every save and whenever a payment changes.
  */
 #[Fillable([
-    'entry_date', 'customer_id', 'customer_card_id', 'bank_id', 'portal_id',
+    'entry_date', 'customer_id', 'customer_card_id', 'bank_id', 'portal_id', 'received_portal_id',
     'bill_amount', 'portal_charge_percent', 'service_charge_percent',
     'due_date', 'reference', 'notes', 'created_by',
 ])]
@@ -74,8 +76,9 @@ class Entry extends Model
     {
         $this->portal_deduction = Money::percentOf($this->bill_amount, $this->portal_charge_percent);
         $this->service_charge = Money::percentOf($this->bill_amount, $this->service_charge_percent);
-        $this->total_due = Money::add($this->bill_amount, $this->service_charge);
-        $this->net_profit = Money::subtract($this->service_charge, $this->portal_deduction);
+        // The customer also pays the portal charge back, so our profit is the whole service charge.
+        $this->total_due = Money::add($this->portal_deduction, $this->service_charge);
+        $this->net_profit = $this->service_charge;
 
         $receivedPaise = $this->exists ? Money::toPaise($this->payments()->sum('amount')) : 0;
         $outstandingPaise = Money::toPaise($this->total_due) - $receivedPaise;
@@ -172,11 +175,23 @@ class Entry extends Model
     }
 
     /**
+     * The portal / account the card bill was paid from ("sent by").
+     *
      * @return BelongsTo<Portal, $this>
      */
     public function portal(): BelongsTo
     {
         return $this->belongsTo(Portal::class);
+    }
+
+    /**
+     * The portal / account the customer's money came into ("received in").
+     *
+     * @return BelongsTo<Portal, $this>
+     */
+    public function receivedPortal(): BelongsTo
+    {
+        return $this->belongsTo(Portal::class, 'received_portal_id');
     }
 
     /**

@@ -39,7 +39,11 @@ class WalletBalancesOverview extends StatsOverviewWidget
     {
         return Portal::query()->where('is_active', true)->orderBy('name')->get()
             ->map(fn (Portal $portal): Stat => Stat::make($portal->name, Money::format($portal->walletBalance()))
-                ->description($portal->isLowOnBalance() ? __('Low balance: please top up') : __('Default charge :percent', ['percent' => Money::percent($portal->charge_percent)]))
+                ->description(match (true) {
+                    $portal->isLowOnBalance() => __('Low balance: please top up'),
+                    $portal->isBankAccount() => __('Bank account'),
+                    default => __('Default charge :percent', ['percent' => Money::percent($portal->charge_percent)]),
+                })
                 ->descriptionIcon($portal->isLowOnBalance() ? Heroicon::OutlinedExclamationTriangle : Heroicon::OutlinedWallet)
                 ->color($portal->isLowOnBalance() ? 'danger' : 'success'))
             ->all();

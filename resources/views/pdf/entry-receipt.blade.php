@@ -30,7 +30,8 @@
 
     <h2>Amount</h2>
     <table class="kv">
-        <tr><td class="label">Credit card bill paid</td><td class="num">{{ Money::format($entry->bill_amount) }}</td></tr>
+        <tr><td class="label">Credit card bill paid</td><td class="num muted">{{ Money::format($entry->bill_amount) }}</td></tr>
+        <tr><td class="label">Portal charge ({{ Money::percent($entry->portal_charge_percent) }})</td><td class="num">{{ Money::format($entry->portal_deduction) }}</td></tr>
         <tr><td class="label">Service charge ({{ Money::percent($entry->service_charge_percent) }})</td><td class="num">{{ Money::format($entry->service_charge) }}</td></tr>
         <tr class="strong"><td>Total payable</td><td class="num">{{ Money::format($entry->total_due) }}</td></tr>
         <tr><td class="label">Received</td><td class="num success">{{ Money::format($entry->amount_received) }}</td></tr>

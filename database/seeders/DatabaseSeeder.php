@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\PaymentMode;
+use App\Enums\PortalType;
 use App\Enums\UserRole;
 use App\Enums\WalletTransactionType;
 use App\Models\Bank;
@@ -44,10 +45,11 @@ class DatabaseSeeder extends Seeder
         ])->mapWithKeys(fn (string $name): array => [$name => Bank::query()->firstOrCreate(['name' => $name])]);
 
         $portals = collect([
-            ['name' => 'MOS', 'charge_percent' => 1.5],
-            ['name' => 'Digi Seva', 'charge_percent' => 1.7],
+            ['name' => 'MOS', 'type' => PortalType::Portal, 'charge_percent' => 1.5, 'low_balance_alert' => 50000],
+            ['name' => 'Digi Seva', 'type' => PortalType::Portal, 'charge_percent' => 1.7, 'low_balance_alert' => 50000],
+            ['name' => 'Current Account', 'type' => PortalType::BankAccount, 'charge_percent' => 0],
         ])->mapWithKeys(fn (array $portal): array => [
-            $portal['name'] => Portal::query()->firstOrCreate(['name' => $portal['name']], [...$portal, 'low_balance_alert' => 50000]),
+            $portal['name'] => Portal::query()->firstOrCreate(['name' => $portal['name']], $portal),
         ]);
 
         if (Entry::query()->exists()) {
@@ -56,7 +58,7 @@ class DatabaseSeeder extends Seeder
 
         $date = Carbon::create(2026, 10, 25);
 
-        foreach (['MOS' => 500000, 'Digi Seva' => 200000] as $portal => $amount) {
+        foreach (['MOS' => 500000, 'Digi Seva' => 200000, 'Current Account' => 100000] as $portal => $amount) {
             $portals[$portal]->walletTransactions()->create([
                 'transaction_date' => $date,
                 'type' => WalletTransactionType::TopUp,
@@ -66,11 +68,12 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // Date, customer, mobile, bank, card, bill, portal, portal %, amount received.
+        // Customer, mobile, bank, card, bill, sent-by portal, portal %, fees received.
+        // Every bill amount comes back into the current account; customers owe portal % + 2.5% service.
         $rows = [
-            ['Rahul', '9876500001', 'Axis Bank', '4321', 100000, 'MOS', 1.5, 0],
-            ['Amit', '9876500002', 'HDFC Bank', '8765', 50000, 'Digi Seva', 1.7, 51250],
-            ['Rajesh', '9876500003', 'ICICI Bank', '1122', 80000, 'MOS', 1.5, 40000],
+            ['Rahul', '9876500001', 'Axis Bank', '4321', 100000, 'MOS', 1.5, 0],          // owes 1,500 + 2,500
+            ['Amit', '9876500002', 'HDFC Bank', '8765', 50000, 'Digi Seva', 1.7, 2100],   // paid 850 + 1,250 in full
+            ['Rajesh', '9876500003', 'ICICI Bank', '1122', 80000, 'MOS', 1.5, 1600],      // paid half of 1,200 + 2,000
         ];
 
         foreach ($rows as [$name, $mobile, $bank, $lastFour, $bill, $portal, $portalPercent, $received]) {
@@ -83,6 +86,7 @@ class DatabaseSeeder extends Seeder
                 'customer_card_id' => $card->id,
                 'bank_id' => $banks[$bank]->id,
                 'portal_id' => $portals[$portal]->id,
+                'received_portal_id' => $portals['Current Account']->id,
                 'bill_amount' => $bill,
                 'portal_charge_percent' => $portalPercent,
                 'service_charge_percent' => 2.5,

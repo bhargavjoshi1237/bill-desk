@@ -51,30 +51,30 @@ class ReportsTest extends TestCase
         $this->assertSame('230000.00', $summary['bill_amount']);
         $this->assertSame('3550.00', $summary['portal_deduction']);   // 1,500 + 850 + 1,200
         $this->assertSame('5750.00', $summary['service_charge']);
-        $this->assertSame('235750.00', $summary['total_due']);
-        $this->assertSame('91250.00', $summary['amount_received']);
-        $this->assertSame('144500.00', $summary['outstanding']);       // 1,02,500 + 0 + 42,000
-        $this->assertSame('2200.00', $summary['net_profit']);          // 1,000 + 400 + 800
-        $this->assertSame('91250.00', $summary['collected_amount']);
-        $this->assertSame('400.00', $summary['collected_profit']);     // only Amit is fully paid
+        $this->assertSame('9300.00', $summary['total_due']);           // portal + service charges only
+        $this->assertSame('3700.00', $summary['amount_received']);     // 2,100 + 1,600
+        $this->assertSame('5600.00', $summary['outstanding']);         // 4,000 + 0 + 1,600
+        $this->assertSame('5750.00', $summary['net_profit']);          // the whole service charge
+        $this->assertSame('3700.00', $summary['collected_amount']);
+        $this->assertSame('1250.00', $summary['collected_profit']);    // only Amit is fully paid
     }
 
     public function test_collected_figures_follow_the_payment_date(): void
     {
-        // Rajesh pays the remaining 42,000 a week later.
+        // Rajesh pays the remaining 1,600 a week later.
         $rajesh = Entry::whereHas('customer', fn ($q) => $q->where('name', 'Rajesh'))->first();
-        Payment::factory()->create(['entry_id' => $rajesh->id, 'amount' => 42000, 'paid_on' => '2026-11-01']);
+        Payment::factory()->create(['entry_id' => $rajesh->id, 'amount' => 1600, 'paid_on' => '2026-11-01']);
 
         $reports = app(ReportService::class);
         $october = $reports->summary(DateRange::between('2026-10-01', '2026-10-31'));
         $november = $reports->summary(DateRange::between('2026-11-01', '2026-11-30'));
 
-        // Booked profit stays in October; Rajesh's 800 is collected in November.
-        $this->assertSame('2200.00', $october['net_profit']);
-        $this->assertSame('400.00', $october['collected_profit']);
+        // Booked profit stays in October; Rajesh's 2,000 is collected in November.
+        $this->assertSame('5750.00', $october['net_profit']);
+        $this->assertSame('1250.00', $october['collected_profit']);
         $this->assertSame('0.00', $november['net_profit']);
-        $this->assertSame('800.00', $november['collected_profit']);
-        $this->assertSame('42000.00', $november['collected_amount']);
+        $this->assertSame('2000.00', $november['collected_profit']);
+        $this->assertSame('1600.00', $november['collected_amount']);
         $this->assertSame('2026-11-01', $rajesh->refresh()->paid_at->toDateString());
     }
 
@@ -92,7 +92,7 @@ class ReportsTest extends TestCase
 
         $daily = app(ReportService::class)->byPeriod(DateRange::between('2026-10-20', '2026-10-25'), 'day');
         $this->assertCount(6, $daily);
-        $this->assertSame('91250.00', $daily['2026-10-25']['collected_amount']);
+        $this->assertSame('3700.00', $daily['2026-10-25']['collected_amount']);
     }
 
     public function test_breakdowns_by_portal_bank_and_customer(): void
@@ -102,8 +102,8 @@ class ReportsTest extends TestCase
 
         $portals = $reports->byPortal($range)->keyBy('name');
         $this->assertSame('180000.00', $portals['MOS']['bill_amount']);
-        $this->assertSame('1800.00', $portals['MOS']['net_profit']);
-        $this->assertSame('400.00', $portals['Digi Seva']['net_profit']);
+        $this->assertSame('4500.00', $portals['MOS']['net_profit']);   // 2,500 + 2,000
+        $this->assertSame('1250.00', $portals['Digi Seva']['net_profit']);
 
         $this->assertSame(['Axis Bank', 'ICICI Bank', 'HDFC Bank'], $reports->byBank($range)->pluck('name')->all());
         $this->assertSame(['Rahul', 'Rajesh'], $reports->byCustomer($range, 2)->pluck('name')->all());
@@ -116,28 +116,28 @@ class ReportsTest extends TestCase
 
         $aging = app(ReportService::class)->aging();
 
-        $this->assertSame(['entries' => 2, 'outstanding' => '144500.00'], array_intersect_key($aging['0_7'], ['entries' => 0, 'outstanding' => 0]));
-        $this->assertSame('1025.00', $aging['8_30']['outstanding']);
-        $this->assertSame('2050.00', $aging['31_plus']['outstanding']);
+        $this->assertSame(['entries' => 2, 'outstanding' => '5600.00'], array_intersect_key($aging['0_7'], ['entries' => 0, 'outstanding' => 0]));
+        $this->assertSame('40.00', $aging['8_30']['outstanding']);     // 15 + 25
+        $this->assertSame('80.00', $aging['31_plus']['outstanding']);  // 30 + 50
     }
 
     public function test_customer_statement_running_balance(): void
     {
         $rajesh = Customer::where('name', 'Rajesh')->first();
         $old = Entry::factory()->create(['customer_id' => $rajesh->id, 'entry_date' => '2026-09-10', 'bill_amount' => 10000]);
-        Payment::factory()->create(['entry_id' => $old->id, 'paid_on' => '2026-09-15', 'amount' => 4000]);
-        Payment::factory()->create(['entry_id' => $old->id, 'paid_on' => '2026-10-26', 'amount' => 1000]);
+        Payment::factory()->create(['entry_id' => $old->id, 'paid_on' => '2026-09-15', 'amount' => 300]);
+        Payment::factory()->create(['entry_id' => $old->id, 'paid_on' => '2026-10-26', 'amount' => 100]);
 
         $statement = (new CustomerStatement($rajesh, DateRange::between('2026-10-01', '2026-10-31')))->build();
 
-        // Opening: 10,250 due − 4,000 paid in September.
-        $this->assertSame('6250.00', $statement['opening']);
-        $this->assertSame('82000.00', $statement['debits']);
-        $this->assertSame('41000.00', $statement['credits']);
-        $this->assertSame('47250.00', $statement['closing']);
+        // Opening: 400 due (150 portal + 250 service) − 300 paid in September.
+        $this->assertSame('100.00', $statement['opening']);
+        $this->assertSame('3200.00', $statement['debits']);
+        $this->assertSame('1700.00', $statement['credits']);
+        $this->assertSame('1600.00', $statement['closing']);
         $this->assertSame(['E-00003', 'R-00002', 'R-00004'], $statement['lines']->pluck('number')->all());
-        $this->assertSame(['88250.00', '48250.00', '47250.00'], $statement['lines']->pluck('balance')->all());
-        $this->assertSame('47250.00', $rajesh->totalOutstanding());
+        $this->assertSame(['3300.00', '1700.00', '1600.00'], $statement['lines']->pluck('balance')->all());
+        $this->assertSame('1600.00', $rajesh->totalOutstanding());
     }
 
     public function test_report_spreadsheet_has_every_sheet(): void
@@ -147,7 +147,7 @@ class ReportsTest extends TestCase
 
         $this->assertSame(['Summary', 'Daily', 'By portal', 'By bank', 'By customer'], array_keys($sheets));
         $this->assertContains(['Bill volume', 230000], $sheets['Summary']);
-        $this->assertContains(['Net profit (booked)', 2200], $sheets['Summary']);
+        $this->assertContains(['Net profit (booked)', 5750], $sheets['Summary']);
         $this->assertSame(['Portal', 'Entries', 'Bill amount', 'Portal deduction', 'Service charge', 'Total due', 'Received', 'Outstanding', 'Net profit'], $sheets['By portal'][0]);
     }
 
@@ -166,7 +166,7 @@ class ReportsTest extends TestCase
         $this->assertSame(['Customers', 'Open entries', 'Aging'], array_keys($sheets));
         $this->assertCount(3, $sheets['Customers']);   // heading + Rahul + Rajesh
         $this->assertSame('Rahul', $sheets['Customers'][1][0]);
-        $this->assertSame(102500, $sheets['Customers'][1][3]);
+        $this->assertSame(4000, $sheets['Customers'][1][3]);
     }
 
     public function test_report_page_exports_download(): void

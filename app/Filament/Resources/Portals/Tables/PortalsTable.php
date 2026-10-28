@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Portals\Tables;
 
+use App\Enums\PortalType;
 use App\Filament\Resources\WalletTransactions\Schemas\WalletTransactionForm;
 use App\Models\Portal;
 use App\Support\Money;
@@ -14,6 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 class PortalsTable
@@ -25,15 +27,19 @@ class PortalsTable
             ->defaultSort('name')
             ->columns([
                 TextColumn::make('name')
-                    ->label(__('Portal'))
+                    ->label(__('Name'))
                     ->searchable()
                     ->weight('bold'),
+                TextColumn::make('type')
+                    ->label(__('Type'))
+                    ->badge()
+                    ->sortable(),
                 TextColumn::make('charge_percent')
                     ->label(__('Default charge'))
                     ->formatStateUsing(fn ($state): string => Money::percent($state))
                     ->alignEnd(),
                 TextColumn::make('wallet_balance')
-                    ->label(__('Wallet balance'))
+                    ->label(__('Balance'))
                     ->state(fn (Portal $record): string => $record->walletBalance())
                     ->money()
                     ->alignEnd()
@@ -50,6 +56,11 @@ class PortalsTable
                     ->placeholder(Money::format(0)),
                 ToggleColumn::make('is_active')
                     ->label(__('Active')),
+            ])
+            ->filters([
+                SelectFilter::make('type')
+                    ->label(__('Type'))
+                    ->options(PortalType::class),
             ])
             ->recordActions([
                 self::topUpAction(),

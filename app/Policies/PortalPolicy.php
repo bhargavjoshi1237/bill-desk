@@ -9,6 +9,9 @@ class PortalPolicy extends AdminOnlyPolicy
 {
     public function delete(User $user, Model $model): bool
     {
-        return $user->isAdmin() && ! $model->entries()->exists() && ! $model->walletTransactions()->exists();
+        return $user->isAdmin()
+            && ! $model->entries()->exists()
+            && ! $model->receivedEntries()->exists()
+            && ! $model->walletTransactions()->exists();
     }
 }

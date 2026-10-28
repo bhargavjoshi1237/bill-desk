@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PortalType;
 use App\Enums\UserRole;
 use App\Enums\WalletTransactionType;
 use App\Filament\Pages\ManageSettings;
 use App\Filament\Resources\Activities\Pages\ListActivities;
 use App\Filament\Resources\Banks\Pages\ManageBanks;
 use App\Filament\Resources\Entries\Pages\CreateEntry;
+use App\Filament\Resources\Portals\Pages\CreatePortal;
 use App\Filament\Resources\Portals\Pages\ListPortals;
 use App\Filament\Resources\Portals\Pages\ViewPortal;
 use App\Filament\Resources\Users\Pages\ManageUsers;
@@ -129,6 +131,29 @@ class AdministrationTest extends TestCase
 
         $portal->update(['low_balance_alert' => 100000]);
         $this->assertTrue($portal->isLowOnBalance());
+    }
+
+    public function test_admin_adds_a_bank_account_and_it_collects_bill_amounts(): void
+    {
+        Livewire::test(CreatePortal::class)
+            ->fillForm(['type' => PortalType::BankAccount->value])
+            // Bank accounts default to no charge.
+            ->assertSchemaStateSet(['charge_percent' => 0])
+            ->fillForm(['name' => 'HDFC Current'])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $account = Portal::query()->where('name', 'HDFC Current')->sole();
+        $this->assertTrue($account->isBankAccount());
+
+        $portal = Portal::factory()->create();
+        Entry::factory()->create(['portal_id' => $portal->id, 'received_portal_id' => $account->id, 'bill_amount' => 10000, 'portal_charge_percent' => 1.5]);
+
+        $this->assertSame('10000.00', $account->walletBalance());
+        $this->assertSame('-10150.00', $portal->walletBalance());
+
+        // Used as a received-in account, so it can't be deleted.
+        $this->assertFalse($this->admin->can('delete', $account));
     }
 
     public function test_banks_in_use_cannot_be_deleted(): void

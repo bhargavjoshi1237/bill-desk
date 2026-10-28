@@ -2,10 +2,14 @@
 
 namespace App\Filament\Resources\Portals\Schemas;
 
+use App\Enums\PortalType;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 class PortalForm
@@ -16,8 +20,22 @@ class PortalForm
             ->components([
                 Section::make(__('Portal details'))
                     ->schema([
+                        ToggleButtons::make('type')
+                            ->label(__('Type'))
+                            ->options(PortalType::class)
+                            ->default(PortalType::Portal->value)
+                            ->required()
+                            ->inline()
+                            ->live()
+                            ->afterStateUpdated(function (Get $get, Set $set): void {
+                                // Bank accounts usually don't charge for paying a bill.
+                                if (self::isBankAccount($get) && blank($get('charge_percent'))) {
+                                    $set('charge_percent', 0);
+                                }
+                            })
+                            ->columnSpanFull(),
                         TextInput::make('name')
-                            ->label(__('Portal name'))
+                            ->label(fn (Get $get): string => self::isBankAccount($get) ? __('Account name') : __('Portal name'))
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->maxLength(255),
@@ -48,5 +66,12 @@ class PortalForm
                     ->columns(2)
                     ->columnSpanFull(),
             ]);
+    }
+
+    private static function isBankAccount(Get $get): bool
+    {
+        $type = $get('type');
+
+        return ($type instanceof PortalType ? $type : PortalType::tryFrom((string) $type)) === PortalType::BankAccount;
     }
 }

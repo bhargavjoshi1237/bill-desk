@@ -31,8 +31,7 @@ class EntryInfolist
                             ->money(),
                         TextEntry::make('portal_deduction')
                             ->label(fn (Entry $record): string => __('Portal deduction (:percent)', ['percent' => Money::percent($record->portal_charge_percent)]))
-                            ->money()
-                            ->color('danger'),
+                            ->money(),
                         TextEntry::make('service_charge')
                             ->label(fn (Entry $record): string => __('Service charge (:percent)', ['percent' => Money::percent($record->service_charge_percent)]))
                             ->money(),
@@ -123,9 +122,14 @@ class EntryInfolist
                                     ->state(fn (Entry $record): ?string => $record->card?->label())
                                     ->placeholder('—'),
                                 TextEntry::make('portal.name')
-                                    ->label(__('Portal'))
+                                    ->label(__('Sent by'))
                                     ->badge()
                                     ->color('gray'),
+                                TextEntry::make('receivedPortal.name')
+                                    ->label(__('Received in'))
+                                    ->badge()
+                                    ->color('gray')
+                                    ->placeholder('—'),
                             ])
                             ->columns(2)
                             ->extraAttributes(['class' => 'h-full']),

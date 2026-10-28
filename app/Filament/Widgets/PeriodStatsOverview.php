@@ -68,7 +68,7 @@ class PeriodStatsOverview extends StatsOverviewWidget
 
         if ($this->isAdmin()) {
             $stats[] = Stat::make(__('Net profit (booked)'), Money::format($summary['net_profit']))
-                ->description(__('Service charge − portal deduction (:amount), by entry date', ['amount' => Money::format($summary['portal_deduction'])]))
+                ->description(__('Service charge, by entry date (portal charges of :amount are paid by customers)', ['amount' => Money::format($summary['portal_deduction'])]))
                 ->descriptionIcon(Heroicon::OutlinedArrowTrendingUp)
                 ->chart($trend['net_profit'])
                 ->color(Money::toPaise($summary['net_profit']) < 0 ? 'danger' : 'success');

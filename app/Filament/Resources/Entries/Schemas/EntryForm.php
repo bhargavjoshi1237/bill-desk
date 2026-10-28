@@ -149,7 +149,10 @@ class EntryForm
                                 return;
                             }
 
-                            $totalDue = Money::add($value, Money::percentOf($value, $get('service_charge_percent')));
+                            $totalDue = Money::add(
+                                Money::percentOf($value, $get('portal_charge_percent')),
+                                Money::percentOf($value, $get('service_charge_percent')),
+                            );
 
                             if (Money::toPaise($totalDue) < Money::toPaise($record->amount_received)) {
                                 $fail(__('The total due can’t be less than the :amount already received.', [
@@ -164,7 +167,7 @@ class EntryForm
                     ->minDate(fn (Get $get) => $get('entry_date'))
                     ->helperText(__('Shown as overdue after this date if not fully paid.')),
                 Select::make('portal_id')
-                    ->label(__('Portal'))
+                    ->label(__('Sent by'))
                     ->relationship('portal', 'name', fn (Builder $query, ?Entry $record) => $query
                         ->where('is_active', true)
                         ->when($record?->portal_id, fn (Builder $query, int $id) => $query->orWhereKey($id)))
@@ -176,7 +179,18 @@ class EntryForm
                         if ($portal = Portal::find($state)) {
                             $set('portal_charge_percent', (float) $portal->charge_percent);
                         }
-                    }),
+                    })
+                    ->helperText(__('Portal or account the card bill was paid from.')),
+                Select::make('received_portal_id')
+                    ->label(__('Received in'))
+                    ->relationship('receivedPortal', 'name', fn (Builder $query, ?Entry $record) => $query
+                        ->where('is_active', true)
+                        ->when($record?->received_portal_id, fn (Builder $query, int $id) => $query->orWhereKey($id)))
+                    ->getOptionLabelFromRecordUsing(fn (Portal $record): string => "{$record->name} ({$record->type->getLabel()})")
+                    ->preload()
+                    ->required()
+                    ->live()
+                    ->helperText(__('Portal or account the customer paid the bill amount into.')),
                 TextInput::make('portal_charge_percent')
                     ->label(__('Portal charge'))
                     ->numeric()
@@ -198,14 +212,15 @@ class EntryForm
                     ->required()
                     ->live(onBlur: true)
                     ->helperText(__('Charged to the customer on the bill amount.')),
+                // Shares the third row with the service charge, so every row is full.
                 TextInput::make('reference')
                     ->label(__('Portal transaction ID'))
-                    ->maxLength(255),
-                // Shares the last row with the transaction ID, so all three rows are full.
+                    ->maxLength(255)
+                    ->columnSpan(['lg' => 2]),
                 Textarea::make('notes')
                     ->label(__('Notes'))
                     ->rows(2)
-                    ->columnSpan(['lg' => 2]),
+                    ->columnSpanFull(),
             ])
             ->columns(3);
     }
@@ -272,14 +287,14 @@ class EntryForm
                     ->state($money('bill_amount')),
                 TextEntry::make('preview_portal_deduction')
                     ->label(fn (Get $get): string => __('Portal deduction (:percent)', ['percent' => Money::percent($get('portal_charge_percent'))]))
-                    ->state($money('portal_deduction'))
-                    ->color('danger'),
+                    ->state($money('portal_deduction')),
                 TextEntry::make('preview_service_charge')
                     ->label(fn (Get $get): string => __('Service charge (:percent)', ['percent' => Money::percent($get('service_charge_percent'))]))
                     ->state($money('service_charge')),
                 TextEntry::make('preview_total_due')
                     ->label(__('Total due from customer'))
                     ->state($money('total_due'))
+                    ->helperText(__('Portal deduction + service charge. The bill amount comes back through the received-in account.'))
                     ->weight(FontWeight::Bold)
                     ->size(TextSize::Large),
                 TextEntry::make('preview_outstanding')
@@ -294,16 +309,25 @@ class EntryForm
                     ->weight(FontWeight::Bold)
                     ->visible(fn (): bool => auth()->user()->isAdmin()),
                 TextEntry::make('preview_wallet')
-                    ->label(__('Portal wallet after this entry'))
+                    ->label(__('Sent-by balance after this entry'))
                     ->state(function (Get $get, ?Entry $record): ?string {
-                        $balance = self::walletAfter($get, $record);
+                        $balance = self::balanceAfter($get, $record, 'portal_id');
 
                         return $balance === null ? '—' : Money::format($balance);
                     })
-                    ->color(fn (Get $get, ?Entry $record): string => Money::toPaise(self::walletAfter($get, $record) ?? 0) < 0 ? 'danger' : 'gray')
-                    ->helperText(fn (Get $get, ?Entry $record): ?string => Money::toPaise(self::walletAfter($get, $record) ?? 0) < 0
+                    ->color(fn (Get $get, ?Entry $record): string => Money::toPaise(self::balanceAfter($get, $record, 'portal_id') ?? 0) < 0 ? 'danger' : 'gray')
+                    ->helperText(fn (Get $get, ?Entry $record): ?string => Money::toPaise(self::balanceAfter($get, $record, 'portal_id') ?? 0) < 0
                         ? __('Not enough balance in the portal wallet. You can still save, but top up the wallet.')
                         : __('Bill + portal deduction is debited from the wallet.')),
+                TextEntry::make('preview_received_balance')
+                    ->label(__('Received-in balance after this entry'))
+                    ->state(function (Get $get, ?Entry $record): ?string {
+                        $balance = self::balanceAfter($get, $record, 'received_portal_id');
+
+                        return $balance === null ? '—' : Money::format($balance);
+                    })
+                    ->color('gray')
+                    ->helperText(__('The bill amount is credited here.')),
             ]);
     }
 
@@ -317,32 +341,46 @@ class EntryForm
         $bill = (float) $get('bill_amount');
         $portalDeduction = Money::percentOf($bill, $get('portal_charge_percent'));
         $serviceCharge = Money::percentOf($bill, $get('service_charge_percent'));
-        $totalDue = Money::add($bill, $serviceCharge);
+        // Same rule as Entry::recalculate(): the customer owes only the two charges.
+        $totalDue = Money::add($portalDeduction, $serviceCharge);
 
         return [
             'bill_amount' => Money::fromPaise(Money::toPaise($bill)),
             'portal_deduction' => $portalDeduction,
             'service_charge' => $serviceCharge,
             'total_due' => $totalDue,
-            'net_profit' => Money::subtract($serviceCharge, $portalDeduction),
+            'net_profit' => $serviceCharge,
             'outstanding' => Money::subtract($totalDue, $get('initial_payment.amount')),
         ];
     }
 
-    private static function walletAfter(Get $get, ?Entry $record): ?string
+    /**
+     * Balance of the sent-by or received-in portal once this entry is saved,
+     * leaving out the entry's own saved amounts when editing.
+     *
+     * @param  'portal_id'|'received_portal_id'  $field
+     */
+    private static function balanceAfter(Get $get, ?Entry $record, string $field): ?string
     {
-        $portal = Portal::find($get('portal_id'));
+        $portal = Portal::find($get($field));
 
         if (! $portal) {
             return null;
         }
 
         $preview = self::preview($get);
+        $paise = Money::toPaise($portal->walletBalance($record?->getKey()));
 
-        return Money::subtract(
-            $portal->walletBalance($record?->getKey()),
-            Money::add($preview['bill_amount'], $preview['portal_deduction']),
-        );
+        // Both sides of the entry apply when the same portal sends and receives.
+        if ((int) $get('portal_id') === $portal->getKey()) {
+            $paise -= Money::toPaise($preview['bill_amount']) + Money::toPaise($preview['portal_deduction']);
+        }
+
+        if ((int) $get('received_portal_id') === $portal->getKey()) {
+            $paise += Money::toPaise($preview['bill_amount']);
+        }
+
+        return Money::fromPaise($paise);
     }
 
     /**

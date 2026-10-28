@@ -33,6 +33,8 @@ class EntryWorkflowTest extends TestCase
 
     private Portal $mos;
 
+    private Portal $account;
+
     private Customer $customer;
 
     private CustomerCard $card;
@@ -43,6 +45,7 @@ class EntryWorkflowTest extends TestCase
 
         $this->admin = User::factory()->admin()->create();
         $this->mos = Portal::factory()->create(['name' => 'MOS', 'charge_percent' => 1.5]);
+        $this->account = Portal::factory()->bankAccount()->create(['name' => 'Current Account']);
         $this->customer = Customer::factory()->create(['name' => 'Rajesh']);
         $this->card = CustomerCard::factory()->create([
             'customer_id' => $this->customer->id,
@@ -61,6 +64,7 @@ class EntryWorkflowTest extends TestCase
                 'entry_date' => '2026-10-25',
                 'bill_amount' => 80000,
                 'portal_id' => $this->mos->id,
+                'received_portal_id' => $this->account->id,
             ])
             // Picking the customer selects their only card and its bank; picking the portal fills its rate.
             ->assertSchemaStateSet([
@@ -69,18 +73,20 @@ class EntryWorkflowTest extends TestCase
                 'portal_charge_percent' => 1.5,
                 'service_charge_percent' => 2.5,
             ])
-            ->fillForm(['initial_payment' => ['amount' => 40000, 'mode' => 'upi', 'reference' => 'UTR123']])
+            ->fillForm(['initial_payment' => ['amount' => 1600, 'mode' => 'upi', 'reference' => 'UTR123']])
             ->call('create')
             ->assertHasNoFormErrors();
 
         $entry = Entry::query()->sole();
 
+        // The bill amount nets out between the two portals; the customer owes only the charges.
         $this->assertSame('1200.00', $entry->portal_deduction);
         $this->assertSame('2000.00', $entry->service_charge);
-        $this->assertSame('82000.00', $entry->total_due);
-        $this->assertSame('40000.00', $entry->amount_received);
-        $this->assertSame('42000.00', $entry->outstanding);
-        $this->assertSame('800.00', $entry->net_profit);
+        $this->assertSame('3200.00', $entry->total_due);
+        $this->assertSame('1600.00', $entry->amount_received);
+        $this->assertSame('1600.00', $entry->outstanding);
+        $this->assertSame('2000.00', $entry->net_profit);
+        $this->assertSame($this->account->id, $entry->received_portal_id);
         $this->assertSame(EntryStatus::Partial, $entry->status);
         $this->assertSame('2026-11-01', $entry->due_date->toDateString());
         $this->assertSame($this->admin->id, $entry->created_by);
@@ -98,13 +104,14 @@ class EntryWorkflowTest extends TestCase
                 'customer_id' => $this->customer->id,
                 'bill_amount' => 100000,
                 'portal_id' => $this->mos->id,
+                'received_portal_id' => $this->account->id,
             ])
             ->call('create')
             ->assertHasNoFormErrors();
 
         $entry = Entry::query()->sole();
         $this->assertSame(EntryStatus::Unpaid, $entry->status);
-        $this->assertSame('102500.00', $entry->outstanding);
+        $this->assertSame('4000.00', $entry->outstanding);   // 1,500 portal + 2,500 service
         $this->assertCount(0, $entry->payments);
     }
 
@@ -115,7 +122,8 @@ class EntryWorkflowTest extends TestCase
                 'customer_id' => $this->customer->id,
                 'bill_amount' => 50000,
                 'portal_id' => $this->mos->id,
-                'initial_payment' => ['amount' => 51250.01],
+                'received_portal_id' => $this->account->id,
+                'initial_payment' => ['amount' => 2000.01],   // due: 750 + 1,250
             ])
             ->call('create')
             ->assertHasFormErrors(['initial_payment.amount']);
@@ -133,6 +141,7 @@ class EntryWorkflowTest extends TestCase
                 'bank_id' => 'required',
                 'bill_amount' => 'required',
                 'portal_id' => 'required',
+                'received_portal_id' => 'required',
                 'service_charge_percent' => 'required',
             ]);
     }
@@ -144,6 +153,7 @@ class EntryWorkflowTest extends TestCase
                 'customer_id' => $this->customer->id,
                 'bill_amount' => 33333,
                 'portal_id' => $this->mos->id,
+                'received_portal_id' => $this->account->id,
             ])
             ->fillForm(['portal_charge_percent' => 1.7, 'service_charge_percent' => 2])
             ->call('create')
@@ -152,7 +162,8 @@ class EntryWorkflowTest extends TestCase
         $entry = Entry::query()->sole();
         $this->assertSame('566.66', $entry->portal_deduction);   // 33,333 × 1.7% = 566.661
         $this->assertSame('666.66', $entry->service_charge);     // 33,333 × 2% = 666.66
-        $this->assertSame('100.00', $entry->net_profit);
+        $this->assertSame('1233.32', $entry->total_due);
+        $this->assertSame('666.66', $entry->net_profit);
     }
 
     public function test_new_entry_page_preselects_customer_from_the_url(): void
@@ -164,9 +175,10 @@ class EntryWorkflowTest extends TestCase
 
     public function test_editing_bill_below_amount_already_received_is_rejected(): void
     {
-        $entry = $this->entry(bill: 50000);
-        Payment::factory()->create(['entry_id' => $entry->id, 'amount' => 30000]);
+        $entry = $this->entry(bill: 50000);   // due 750 + 1,250
+        Payment::factory()->create(['entry_id' => $entry->id, 'amount' => 1200]);
 
+        // 20,000 → due 300 + 500 = 800, less than the 1,200 received.
         Livewire::test(EditEntry::class, ['record' => $entry->id])
             ->fillForm(['bill_amount' => 20000])
             ->call('save')
@@ -178,8 +190,8 @@ class EntryWorkflowTest extends TestCase
             ->assertHasNoFormErrors();
 
         $entry->refresh();
-        $this->assertSame('41000.00', $entry->total_due);
-        $this->assertSame('11000.00', $entry->outstanding);
+        $this->assertSame('1600.00', $entry->total_due);
+        $this->assertSame('400.00', $entry->outstanding);
         $this->assertSame(EntryStatus::Partial, $entry->status);
     }
 
@@ -190,7 +202,7 @@ class EntryWorkflowTest extends TestCase
         Livewire::test(ListEntries::class)
             ->callAction(TestAction::make('recordPayment')->table($entry), [
                 'paid_on' => today()->toDateString(),
-                'amount' => 82000,
+                'amount' => 3200,
                 'mode' => 'cash',
             ])
             ->assertHasNoFormErrors();
@@ -209,7 +221,7 @@ class EntryWorkflowTest extends TestCase
         $entry = $this->entry(bill: 80000);
 
         Livewire::test(ViewEntry::class, ['record' => $entry->id])
-            ->callAction('recordPayment', ['paid_on' => today()->toDateString(), 'amount' => 82000.01, 'mode' => 'cash'])
+            ->callAction('recordPayment', ['paid_on' => today()->toDateString(), 'amount' => 3200.01, 'mode' => 'cash'])
             ->assertHasFormErrors(['amount']);
 
         $this->assertSame(0, Payment::query()->count());
@@ -220,18 +232,18 @@ class EntryWorkflowTest extends TestCase
         $entry = $this->entry(bill: 80000);
 
         Livewire::test(PaymentsRelationManager::class, ['ownerRecord' => $entry, 'pageClass' => ViewEntry::class])
-            ->callAction(TestAction::make('create')->table(), ['paid_on' => today()->toDateString(), 'amount' => 30000, 'mode' => 'upi'])
+            ->callAction(TestAction::make('create')->table(), ['paid_on' => today()->toDateString(), 'amount' => 1000, 'mode' => 'upi'])
             ->assertHasNoFormErrors()
             ->assertDispatched('entry-payments-changed');
 
-        $this->assertSame('52000.00', $entry->refresh()->outstanding);
+        $this->assertSame('2200.00', $entry->refresh()->outstanding);
 
         $payment = $entry->payments()->sole();
 
         Livewire::test(PaymentsRelationManager::class, ['ownerRecord' => $entry, 'pageClass' => ViewEntry::class])
             ->callAction(TestAction::make('delete')->table($payment));
 
-        $this->assertSame('82000.00', $entry->refresh()->outstanding);
+        $this->assertSame('3200.00', $entry->refresh()->outstanding);
         $this->assertSame(EntryStatus::Unpaid, $entry->status);
     }
 
@@ -241,8 +253,8 @@ class EntryWorkflowTest extends TestCase
 
         Livewire::test(CreatePayment::class)
             ->fillForm(['entry_id' => $entry->id])
-            ->assertSchemaStateSet(['amount' => '82000.00'])
-            ->fillForm(['amount' => 90000])
+            ->assertSchemaStateSet(['amount' => '3200.00'])
+            ->fillForm(['amount' => 5000])
             ->call('create')
             ->assertHasFormErrors(['amount']);
 
@@ -251,48 +263,48 @@ class EntryWorkflowTest extends TestCase
             ->call('create')
             ->assertHasNoFormErrors();
 
-        $this->assertSame('80000.00', $entry->refresh()->outstanding);
+        $this->assertSame('1200.00', $entry->refresh()->outstanding);
     }
 
     public function test_editing_a_payment_allows_its_own_amount_again(): void
     {
         $entry = $this->entry(bill: 80000);
-        $payment = Payment::factory()->create(['entry_id' => $entry->id, 'amount' => 82000]);
+        $payment = Payment::factory()->create(['entry_id' => $entry->id, 'amount' => 3200]);
 
         // The entry is fully paid, but editing this payment may keep (or lower) its amount.
         Livewire::test(EditPayment::class, ['record' => $payment->id])
-            ->fillForm(['amount' => 82000])
+            ->fillForm(['amount' => 3200])
             ->call('save')
             ->assertHasNoFormErrors()
-            ->fillForm(['amount' => 82000.5])
+            ->fillForm(['amount' => 3200.5])
             ->call('save')
             ->assertHasFormErrors(['amount']);
 
         Livewire::test(EditPayment::class, ['record' => $payment->id])
-            ->fillForm(['amount' => 50000])
+            ->fillForm(['amount' => 2000])
             ->call('save')
             ->assertHasNoFormErrors();
 
-        $this->assertSame('32000.00', $entry->refresh()->outstanding);
+        $this->assertSame('1200.00', $entry->refresh()->outstanding);
     }
 
     public function test_moving_a_payment_to_another_entry_retotals_both(): void
     {
         $first = $this->entry(bill: 10000);
         $second = $this->entry(bill: 20000);
-        $payment = Payment::factory()->create(['entry_id' => $first->id, 'amount' => 5000]);
+        $payment = Payment::factory()->create(['entry_id' => $first->id, 'amount' => 300]);
 
         $payment->update(['entry_id' => $second->id]);
 
-        $this->assertSame('10250.00', $first->refresh()->outstanding);
-        $this->assertSame('15500.00', $second->refresh()->outstanding);
+        $this->assertSame('400.00', $first->refresh()->outstanding);    // 150 + 250
+        $this->assertSame('500.00', $second->refresh()->outstanding);   // 300 + 500 − 300
     }
 
     public function test_status_tabs_filter_the_list(): void
     {
         $unpaid = $this->entry(bill: 1000);
         $paid = $this->entry(bill: 2000);
-        Payment::factory()->create(['entry_id' => $paid->id, 'amount' => 2050]);
+        Payment::factory()->create(['entry_id' => $paid->id, 'amount' => 80]);   // 30 + 50
         $overdue = $this->entry(bill: 3000, attributes: ['entry_date' => today()->subDays(20), 'due_date' => today()->subDays(3)]);
 
         Livewire::test(ListEntries::class)
@@ -324,12 +336,14 @@ class EntryWorkflowTest extends TestCase
                 'customer_id' => $this->customer->id,
                 'bill_amount' => 80000,
                 'portal_id' => $this->mos->id,
+                'received_portal_id' => $this->account->id,
             ])
             ->call('create')
             ->assertHasNoFormErrors()
             ->assertNotified('Portal wallet balance is negative');
 
         $this->assertSame('-31200.00', $this->mos->walletBalance());   // 50,000 − (80,000 + 1,200)
+        $this->assertSame('80000.00', $this->account->walletBalance());   // the bill amount came back here
     }
 
     public function test_operators_cannot_delete_entries_but_admins_can(): void
@@ -365,6 +379,7 @@ class EntryWorkflowTest extends TestCase
             'customer_card_id' => $this->card->id,
             'bank_id' => $this->card->bank_id,
             'portal_id' => $this->mos->id,
+            'received_portal_id' => $this->account->id,
             'bill_amount' => $bill,
             'portal_charge_percent' => 1.5,
             ...$attributes,

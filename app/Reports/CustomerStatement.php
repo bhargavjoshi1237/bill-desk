@@ -40,10 +40,11 @@ final class CustomerStatement
                 'sort' => 0,
                 'id' => $entry->id,
                 'number' => $entry->number(),
-                'description' => __('Card bill paid: :card via :portal (bill :bill + service :service)', [
+                'description' => __('Card bill :bill paid: :card via :portal (portal charge :fee + service :service)', [
                     'card' => $entry->card?->label() ?: $entry->bank?->name,
                     'portal' => $entry->portal?->name,
                     'bill' => Money::format($entry->bill_amount),
+                    'fee' => Money::format($entry->portal_deduction),
                     'service' => Money::format($entry->service_charge),
                 ]),
                 'debit' => $entry->total_due,
