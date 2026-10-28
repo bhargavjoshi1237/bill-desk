@@ -4,11 +4,14 @@ namespace App\Providers;
 
 use App\Policies\ActivityPolicy;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Schemas\Schema;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Activitylog\Models\Activity;
 
@@ -29,6 +32,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Activity::class, ActivityPolicy::class);
 
+        // Shared hosts don't always tell PHP the request came over HTTPS.
+        URL::forceHttps($this->app->isProduction());
+
         // Indian formats everywhere: 25-10-2026 and ₹1,02,500.00.
         Table::configureUsing(fn (Table $table) => $table
             ->defaultDateDisplayFormat('d-m-Y')
@@ -47,6 +53,10 @@ class AppServiceProvider extends ServiceProvider
             ->displayFormat('d-m-Y')
             ->firstDayOfWeek(1)
             ->closeOnDateSelection());
+
+        // Styled dropdowns everywhere instead of the browser's native <select>.
+        Select::configureUsing(fn (Select $select) => $select->native(false));
+        SelectFilter::configureUsing(fn (SelectFilter $filter) => $filter->native(false));
 
         Event::listen(Login::class, function (Login $event): void {
             activity('auth')->causedBy($event->user)->event('login')->log('Logged in');

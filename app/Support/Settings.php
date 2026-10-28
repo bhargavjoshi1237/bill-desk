@@ -24,7 +24,7 @@ final class Settings
             'business_phone' => null,
             'default_service_charge_percent' => 2.5,
             'default_due_days' => 7,
-            'whatsapp_template' => 'Namaste {name}, your outstanding amount with {business} is {amount}. Kindly pay at the earliest. Thank you.',
+            'whatsapp_template' => 'Hello {name}, your outstanding amount with {business} is {amount}. Kindly pay at the earliest. Thank you.',
             'receipt_footer' => 'Thank you for your business.',
         ];
     }

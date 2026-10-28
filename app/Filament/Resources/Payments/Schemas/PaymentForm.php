@@ -117,7 +117,6 @@ class PaymentForm
             ->label(__('Entry'))
             ->required()
             ->searchable()
-            ->native(false)
             ->live()
             ->default(fn (): ?int => request()->integer('entry') ?: null)
             ->options(fn ($record): array => self::entryOptions(
