@@ -30,7 +30,6 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 
 class EntryForm
 {
@@ -128,13 +127,7 @@ class EntryForm
                     ->label(__('Date'))
                     ->default(today())
                     ->maxDate(today())
-                    ->required()
-                    ->live()
-                    ->afterStateUpdated(function (?string $state, Set $set, string $operation): void {
-                        if ($operation === 'create' && $state) {
-                            $set('due_date', Carbon::parse($state)->addDays(Settings::dueDays())->toDateString());
-                        }
-                    }),
+                    ->required(),
                 TextInput::make('bill_amount')
                     ->label(__('Bill amount'))
                     ->numeric()
@@ -158,11 +151,6 @@ class EntryForm
                             }
                         },
                     ]),
-                DatePicker::make('due_date')
-                    ->label(__('Repayment due date'))
-                    ->default(today()->addDays(Settings::dueDays()))
-                    ->minDate(fn (Get $get) => $get('entry_date'))
-                    ->helperText(__('Shown as overdue after this date if not fully paid.')),
                 Select::make('portal_id')
                     ->label(__('Portal'))
                     ->relationship('portal', 'name', fn (Builder $query, ?Entry $record) => $query
@@ -201,11 +189,11 @@ class EntryForm
                 TextInput::make('reference')
                     ->label(__('Portal transaction ID'))
                     ->maxLength(255),
-                // Shares the last row with the transaction ID, so all three rows are full.
+                // Two full rows of three above, then notes across the whole width.
                 Textarea::make('notes')
                     ->label(__('Notes'))
                     ->rows(2)
-                    ->columnSpan(['lg' => 2]),
+                    ->columnSpanFull(),
             ])
             ->columns(3);
     }
@@ -293,17 +281,6 @@ class EntryForm
                     ->color(fn (Get $get): string => Money::toPaise(self::preview($get)['net_profit']) < 0 ? 'danger' : 'success')
                     ->weight(FontWeight::Bold)
                     ->visible(fn (): bool => auth()->user()->isAdmin()),
-                TextEntry::make('preview_wallet')
-                    ->label(__('Portal wallet after this entry'))
-                    ->state(function (Get $get, ?Entry $record): ?string {
-                        $balance = self::walletAfter($get, $record);
-
-                        return $balance === null ? '—' : Money::format($balance);
-                    })
-                    ->color(fn (Get $get, ?Entry $record): string => Money::toPaise(self::walletAfter($get, $record) ?? 0) < 0 ? 'danger' : 'gray')
-                    ->helperText(fn (Get $get, ?Entry $record): ?string => Money::toPaise(self::walletAfter($get, $record) ?? 0) < 0
-                        ? __('Not enough balance in the portal wallet. You can still save, but top up the wallet.')
-                        : __('Bill + portal deduction is debited from the wallet.')),
             ]);
     }
 
@@ -327,22 +304,6 @@ class EntryForm
             'net_profit' => Money::subtract($serviceCharge, $portalDeduction),
             'outstanding' => Money::subtract($totalDue, $get('initial_payment.amount')),
         ];
-    }
-
-    private static function walletAfter(Get $get, ?Entry $record): ?string
-    {
-        $portal = Portal::find($get('portal_id'));
-
-        if (! $portal) {
-            return null;
-        }
-
-        $preview = self::preview($get);
-
-        return Money::subtract(
-            $portal->walletBalance($record?->getKey()),
-            Money::add($preview['bill_amount'], $preview['portal_deduction']),
-        );
     }
 
     /**

@@ -30,12 +30,6 @@ class PortalForm
                             ->step(0.001)
                             ->required()
                             ->helperText(__('Pre-filled on new entries; can be changed per entry. Existing entries keep their own rate.')),
-                        TextInput::make('low_balance_alert')
-                            ->label(__('Low balance alert'))
-                            ->numeric()
-                            ->prefix('₹')
-                            ->minValue(0)
-                            ->helperText(__('Warn on the dashboard when the wallet drops below this amount.')),
                         Toggle::make('is_active')
                             ->label(__('Active'))
                             ->default(true)
@@ -45,7 +39,7 @@ class PortalForm
                             ->rows(2)
                             ->columnSpanFull(),
                     ])
-                    ->columns(2)
+                    ->columns(3)
                     ->columnSpanFull(),
             ]);
     }

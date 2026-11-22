@@ -29,7 +29,6 @@
         .badge-paid { background: #dafbe1; color: #116329; }
         .badge-partial { background: #ddf4ff; color: #0550ae; }
         .badge-unpaid { background: #fff8c5; color: #7d4e00; }
-        .badge-overdue { background: #ffebe9; color: #a40e26; }
         .stats { width: 100%; border-collapse: separate; border-spacing: 6px 0; margin: 0 -6px 6px; }
         .stats td { border: 1px solid #d0d7de; border-radius: 4px; padding: 6px 8px; width: 25%; }
         .stats .value { font-size: 13px; font-weight: bold; }

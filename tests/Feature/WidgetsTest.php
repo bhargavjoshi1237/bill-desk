@@ -5,12 +5,12 @@ namespace Tests\Feature;
 use App\Filament\Widgets\AgingOverview;
 use App\Filament\Widgets\BreakdownTable;
 use App\Filament\Widgets\CollectionsTrendChart;
+use App\Filament\Widgets\DayWiseTable;
 use App\Filament\Widgets\OutstandingCustomersTable;
-use App\Filament\Widgets\OverdueEntriesTable;
 use App\Filament\Widgets\PeriodStatsOverview;
 use App\Filament\Widgets\ProfitTrendChart;
 use App\Filament\Widgets\VolumeByDimensionChart;
-use App\Filament\Widgets\WalletBalancesOverview;
+use App\Filament\Widgets\YesterdayOverview;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -56,7 +56,16 @@ class WidgetsTest extends TestCase
             ->assertDontSee('₹2,200.00');
 
         $this->assertFalse(ProfitTrendChart::canView());
-        $this->assertFalse(WalletBalancesOverview::canView());
+
+        Carbon::setTestNow('2026-10-26 10:00:00');
+
+        Livewire::test(YesterdayOverview::class)
+            ->assertSee('₹2,30,000.00')
+            ->assertDontSee('₹2,200.00');
+
+        Livewire::test(DayWiseTable::class, ['pageFilters' => self::FILTERS])
+            ->assertSee('₹2,30,000.00')
+            ->assertDontSee('₹2,200.00');
     }
 
     public function test_every_widget_renders(): void
@@ -67,7 +76,6 @@ class WidgetsTest extends TestCase
         Livewire::test(ProfitTrendChart::class, ['pageFilters' => self::FILTERS])->assertOk();
         Livewire::test(VolumeByDimensionChart::class, ['pageFilters' => self::FILTERS, 'dimension' => 'portal'])->assertOk();
         Livewire::test(VolumeByDimensionChart::class, ['pageFilters' => self::FILTERS, 'dimension' => 'bank'])->assertOk();
-        Livewire::test(WalletBalancesOverview::class)->assertSee('₹3,17,300.00')->assertSee('₹1,49,150.00');
         Livewire::test(AgingOverview::class)->assertSee('₹1,44,500.00');
 
         foreach (['period', 'portal', 'bank', 'customer'] as $dimension) {
@@ -82,19 +90,32 @@ class WidgetsTest extends TestCase
             ->assertDontSee('Amit');
     }
 
-    public function test_overdue_table_lists_entries_past_their_due_date(): void
+    public function test_yesterday_shows_bills_paid_service_charge_and_profit(): void
     {
         $this->actingAs(User::where('email', 'admin@example.com')->first());
 
-        Livewire::test(OverdueEntriesTable::class)->assertSee('Nothing overdue');
+        // On the entry date itself, yesterday had nothing.
+        Livewire::test(YesterdayOverview::class)->assertSee('₹0.00')->assertDontSee('₹2,30,000.00');
 
-        // Due date is 01-11-2026; on the 5th, Rahul and Rajesh are overdue.
-        Carbon::setTestNow('2026-11-05 10:00:00');
+        Carbon::setTestNow('2026-10-26 10:00:00');
 
-        Livewire::test(OverdueEntriesTable::class)
-            ->assertSee('Rahul')
-            ->assertSee('Rajesh')
-            ->assertDontSee('Amit')
-            ->assertSee('4 days overdue');
+        Livewire::test(YesterdayOverview::class)
+            ->assertSee('25-10-2026')
+            ->assertSee('₹2,30,000.00')   // bills paid
+            ->assertSee('₹5,750.00')      // service charge
+            ->assertSee('₹2,200.00');     // profit
+    }
+
+    public function test_day_wise_table_lists_each_day_with_a_total(): void
+    {
+        $this->actingAs(User::where('email', 'admin@example.com')->first());
+
+        Livewire::test(DayWiseTable::class, ['pageFilters' => self::FILTERS])
+            ->assertSee('25-10-2026')
+            ->assertDontSee('24-10-2026')   // days without entries are left out
+            ->assertSee('₹2,30,000.00')
+            ->assertSee('₹5,750.00')
+            ->assertSee('₹2,200.00')
+            ->assertSee('Total');
     }
 }

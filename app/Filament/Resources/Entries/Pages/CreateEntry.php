@@ -6,7 +6,6 @@ use App\Filament\Concerns\HasFormContentWidth;
 use App\Filament\Resources\Entries\EntryResource;
 use App\Models\Entry;
 use App\Support\Money;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateEntry extends CreateRecord
@@ -49,18 +48,6 @@ class CreateEntry extends CreateRecord
             ]);
 
             $entry->refresh();
-        }
-
-        if (Money::toPaise($entry->portal->walletBalance()) < 0) {
-            Notification::make()
-                ->warning()
-                ->title(__('Portal wallet balance is negative'))
-                ->body(__(':portal wallet is now at :amount. Please record a top-up.', [
-                    'portal' => $entry->portal->name,
-                    'amount' => Money::format($entry->portal->walletBalance()),
-                ]))
-                ->persistent()
-                ->send();
         }
     }
 

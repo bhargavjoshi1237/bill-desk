@@ -290,7 +290,7 @@
     "Default service charge": "डिफ़ॉल्ट सेवा शुल्क",
     "Repayment due after (days)": "चुकाने की अवधि (दिन)",
     "Message template": "संदेश टेम्पलेट",
-    "Placeholders: {name}, {amount}, {business}, {due_date}, {entry}": "प्लेसहोल्डर: {name}, {amount}, {business}, {due_date}, {entry}",
+    "Placeholders: {name}, {amount}, {business}, {entry}": "प्लेसहोल्डर: {name}, {amount}, {business}, {entry}",
     "Save settings": "सेटिंग्स सहेजें",
     "Settings saved": "सेटिंग्स सहेजी गईं",
     "Dashboard": "डैशबोर्ड",
@@ -310,5 +310,12 @@
     "This year": "इस वर्ष",
     "This financial year (Apr–Mar)": "इस वित्तीय वर्ष (अप्रैल–मार्च)",
     "Custom range": "कस्टम अवधि",
-    "Bank / portal": "बैंक / पोर्टल"
+    "Bank / portal": "बैंक / पोर्टल",
+    "Yesterday (:date)": "कल (:date)",
+    "Bills paid": "भरे गए बिल",
+    "Profit": "मुनाफ़ा",
+    "Charged to customers": "ग्राहकों से लिया गया",
+    "Service charge − portal deduction": "सेवा शुल्क − पोर्टल कटौती",
+    "Day-wise: :period": "दिन-वार: :period",
+    "Optional. Needed for WhatsApp reminders.": "वैकल्पिक। व्हाट्सऐप रिमाइंडर के लिए ज़रूरी।"
 }

@@ -20,7 +20,7 @@ enum NavigationGroup implements HasLabel
         return match ($this) {
             self::Operations => __('Operations'),
             self::Reports => __('Reports'),
-            self::Portals => __('Portals & Wallet'),
+            self::Portals => __('Portals'),
             self::Administration => __('Administration'),
         };
     }

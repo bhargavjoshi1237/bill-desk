@@ -21,7 +21,7 @@ class CustomerInfolist
     public static function configure(Schema $schema): Schema
     {
         // Net profit is admin-only; the summary fits one row either way.
-        $summaryColumns = (auth()->user()?->isAdmin() ?? false) ? 6 : 5;
+        $summaryColumns = (auth()->user()?->isAdmin() ?? false) ? 5 : 4;
 
         return $schema
             ->components([
@@ -47,11 +47,6 @@ class CustomerInfolist
                             ->color(fn (Customer $record): string => Money::toPaise($record->totalOutstanding()) > 0 ? 'danger' : 'success')
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large),
-                        TextEntry::make('summary_overdue')
-                            ->label(__('Overdue'))
-                            ->state(fn (Customer $record): string => Money::format($record->entries()->overdue()->sum('outstanding')))
-                            ->color('danger')
-                            ->size(TextSize::Large),
                         TextEntry::make('summary_profit')
                             ->label(__('Net profit earned'))
                             ->state(fn (Customer $record): string => Money::format($record->entries()->sum('net_profit')))
@@ -72,7 +67,8 @@ class CustomerInfolist
                                 TextEntry::make('mobile')
                                     ->label(__('Mobile number'))
                                     ->copyable()
-                                    ->url(fn (Customer $record): string => 'tel:'.$record->mobile),
+                                    ->placeholder('—')
+                                    ->url(fn (Customer $record): ?string => $record->mobile ? 'tel:'.$record->mobile : null),
                                 TextEntry::make('city')
                                     ->label(__('City'))
                                     ->placeholder('—'),

@@ -95,7 +95,7 @@ class Customer extends Model
 
     public function displayName(): string
     {
-        return "{$this->name} ({$this->mobile})";
+        return $this->mobile ? "{$this->name} ({$this->mobile})" : $this->name;
     }
 
     public function maskedAadhaar(): ?string

@@ -57,6 +57,23 @@ class CustomerTest extends TestCase
         $this->assertSame('HDFC Bank •••• 8765 (Visa)', $customer->cards()->sole()->label());
     }
 
+    public function test_mobile_is_optional_and_hides_the_whatsapp_reminder(): void
+    {
+        Livewire::test(CreateCustomer::class)
+            ->fillForm(['name' => 'Walk-in', 'mobile' => null])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $customer = Customer::query()->sole();
+        $this->assertNull($customer->mobile);
+        $this->assertSame('Walk-in', $customer->displayName());
+
+        Entry::factory()->create(['customer_id' => $customer->id, 'bill_amount' => 1000]);
+
+        Livewire::test(ListCustomers::class)
+            ->assertActionHidden(TestAction::make('whatsappReminder')->table($customer));
+    }
+
     public function test_duplicate_mobile_is_rejected_even_when_formatted_differently(): void
     {
         Customer::factory()->create(['name' => 'Rahul', 'mobile' => '9876500001']);

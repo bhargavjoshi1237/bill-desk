@@ -16,12 +16,12 @@ class GridColumnsTest extends TestCase
         return [
             'no cards still gets a column' => [0, 1],
             'one card' => [1, 1],
-            'two wallets share the row' => [2, 2],
+            'two cards share the row' => [2, 2],
             'a full row' => [4, 4],
             'five cards: 3 + 2 beats 4 + 1' => [5, 3],
-            'operator stats: two rows of 3' => [6, 3],
+            'six cards: two rows of 3' => [6, 3],
             'seven cards: 4 + 3' => [7, 4],
-            'admin stats: two rows of 4' => [8, 4],
+            'eight cards: two rows of 4' => [8, 4],
             'nine cards: three rows of 3' => [9, 3],
         ];
     }

@@ -15,7 +15,6 @@ class PortalFactory extends Factory
         return [
             'name' => fake()->unique()->word().' Portal',
             'charge_percent' => fake()->randomElement([1.5, 1.7, 1.2]),
-            'low_balance_alert' => null,
             'is_active' => true,
         ];
     }

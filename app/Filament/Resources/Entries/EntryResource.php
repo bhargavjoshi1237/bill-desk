@@ -44,23 +44,6 @@ class EntryResource extends Resource
         return __('Entries');
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        $overdue = Entry::query()->overdue()->count();
-
-        return $overdue > 0 ? (string) $overdue : null;
-    }
-
-    public static function getNavigationBadgeColor(): string
-    {
-        return 'danger';
-    }
-
-    public static function getNavigationBadgeTooltip(): ?string
-    {
-        return __('Overdue entries');
-    }
-
     public static function form(Schema $schema): Schema
     {
         return EntryForm::configure($schema);

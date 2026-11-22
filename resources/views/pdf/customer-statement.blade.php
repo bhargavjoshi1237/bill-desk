@@ -10,7 +10,7 @@
             <td>
                 <table class="kv">
                     <tr><td class="label">Customer</td><td><strong>{{ $customer->name }}</strong></td></tr>
-                    <tr><td class="label">Mobile</td><td>{{ $customer->mobile }}</td></tr>
+                    <tr><td class="label">Mobile</td><td>{{ $customer->mobile ?? '—' }}</td></tr>
                     @if ($customer->city)<tr><td class="label">City</td><td>{{ $customer->city }}</td></tr>@endif
                 </table>
             </td>
@@ -57,21 +57,20 @@
     @if ($statement['open_entries']->isNotEmpty())
         <h2>Unpaid entries as of today</h2>
         <table class="grid">
-            <thead><tr><th>Entry #</th><th>Date</th><th>Bank</th><th>Due date</th><th class="num">Total due</th><th class="num">Received</th><th class="num">Outstanding</th></tr></thead>
+            <thead><tr><th>Entry #</th><th>Date</th><th>Bank</th><th class="num">Total due</th><th class="num">Received</th><th class="num">Outstanding</th></tr></thead>
             <tbody>
                 @foreach ($statement['open_entries'] as $entry)
                     <tr>
                         <td>{{ $entry->number() }}</td>
                         <td>{{ $entry->entry_date->format('d-m-Y') }}</td>
                         <td>{{ $entry->bank?->name }}</td>
-                        <td class="{{ $entry->isOverdue() ? 'danger' : '' }}">{{ $entry->due_date?->format('d-m-Y') ?? '—' }}{{ $entry->isOverdue() ? ' (overdue)' : '' }}</td>
                         <td class="num">{{ Money::format($entry->total_due) }}</td>
                         <td class="num">{{ Money::format($entry->amount_received) }}</td>
                         <td class="num danger">{{ Money::format($entry->outstanding) }}</td>
                     </tr>
                 @endforeach
                 <tr class="total">
-                    <td colspan="6">Total outstanding</td>
+                    <td colspan="5">Total outstanding</td>
                     <td class="num">{{ Money::format(Money::fromPaise($statement['open_entries']->sum(fn ($e) => Money::toPaise($e->outstanding)))) }}</td>
                 </tr>
             </tbody>

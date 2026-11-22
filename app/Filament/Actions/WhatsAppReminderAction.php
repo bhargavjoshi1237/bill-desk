@@ -22,10 +22,20 @@ final class WhatsAppReminderAction
             ->label(__('WhatsApp reminder'))
             ->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)
             ->color('success')
-            ->visible(fn (Model $record): bool => Money::toPaise(self::outstanding($record)) > 0)
+            ->visible(fn (Model $record): bool => Money::toPaise(self::outstanding($record)) > 0
+                && filled(self::customer($record)?->mobile))
             ->url(fn (Model $record): string => $record instanceof Entry
                 ? WhatsApp::reminderUrl($record->customer, $record->outstanding, $record)
                 : WhatsApp::reminderUrl($record, self::outstanding($record)), shouldOpenInNewTab: true);
+    }
+
+    private static function customer(Model $record): ?Customer
+    {
+        return match (true) {
+            $record instanceof Entry => $record->customer,
+            $record instanceof Customer => $record,
+            default => null,
+        };
     }
 
     private static function outstanding(Model $record): string

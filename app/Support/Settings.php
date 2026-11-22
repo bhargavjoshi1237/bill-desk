@@ -23,7 +23,6 @@ final class Settings
             'business_address' => null,
             'business_phone' => null,
             'default_service_charge_percent' => 2.5,
-            'default_due_days' => 7,
             'whatsapp_template' => 'Hello {name}, your outstanding amount with {business} is {amount}. Kindly pay at the earliest. Thank you.',
             'receipt_footer' => 'Thank you for your business.',
         ];
@@ -64,11 +63,6 @@ final class Settings
     public static function serviceChargePercent(): float
     {
         return (float) self::get('default_service_charge_percent');
-    }
-
-    public static function dueDays(): int
-    {
-        return (int) self::get('default_due_days');
     }
 
     public static function businessName(): string

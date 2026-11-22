@@ -7,7 +7,6 @@ use App\Filament\Resources\Portals\Pages\CreatePortal;
 use App\Filament\Resources\Portals\Pages\EditPortal;
 use App\Filament\Resources\Portals\Pages\ListPortals;
 use App\Filament\Resources\Portals\Pages\ViewPortal;
-use App\Filament\Resources\Portals\RelationManagers\WalletTransactionsRelationManager;
 use App\Filament\Resources\Portals\Schemas\PortalForm;
 use App\Filament\Resources\Portals\Schemas\PortalInfolist;
 use App\Filament\Resources\Portals\Tables\PortalsTable;
@@ -43,23 +42,6 @@ class PortalResource extends Resource
         return __('Portals');
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        $low = Portal::query()->where('is_active', true)->get()->filter->isLowOnBalance()->count();
-
-        return $low > 0 ? (string) $low : null;
-    }
-
-    public static function getNavigationBadgeColor(): string
-    {
-        return 'warning';
-    }
-
-    public static function getNavigationBadgeTooltip(): ?string
-    {
-        return __('Portals with low wallet balance');
-    }
-
     public static function form(Schema $schema): Schema
     {
         return PortalForm::configure($schema);
@@ -73,13 +55,6 @@ class PortalResource extends Resource
     public static function table(Table $table): Table
     {
         return PortalsTable::configure($table);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            WalletTransactionsRelationManager::class,
-        ];
     }
 
     public static function getPages(): array

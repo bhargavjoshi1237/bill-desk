@@ -7,7 +7,6 @@ use App\Exports\OutstandingExport;
 use App\Exports\Spreadsheet;
 use App\Filament\Widgets\AgingOverview;
 use App\Filament\Widgets\OutstandingCustomersTable;
-use App\Filament\Widgets\OverdueEntriesTable;
 use App\Pdf\PdfDocument;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -64,7 +63,6 @@ class Outstanding extends BaseDashboard
         return [
             AgingOverview::class,
             OutstandingCustomersTable::class,
-            OverdueEntriesTable::class,
         ];
     }
 

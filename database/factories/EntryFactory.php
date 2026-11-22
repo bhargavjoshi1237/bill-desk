@@ -23,7 +23,6 @@ class EntryFactory extends Factory
             'bill_amount' => 100000,
             'portal_charge_percent' => 1.5,
             'service_charge_percent' => 2.5,
-            'due_date' => today()->addDays(7),
         ];
     }
 }

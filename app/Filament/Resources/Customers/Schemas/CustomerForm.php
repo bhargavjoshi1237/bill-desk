@@ -101,10 +101,14 @@ class CustomerForm
                 ->label(__('Mobile number'))
                 ->tel()
                 ->prefix('+91')
-                ->required()
                 ->maxLength(15)
+                ->helperText(__('Optional. Needed for WhatsApp reminders.'))
                 ->rules([
                     fn ($record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($record): void {
+                        if (blank($value)) {
+                            return;
+                        }
+
                         $mobile = Customer::normalizeMobile((string) $value);
 
                         if (! preg_match('/^[6-9]\d{9}$/', (string) $mobile)) {

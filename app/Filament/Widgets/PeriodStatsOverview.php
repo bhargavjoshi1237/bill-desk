@@ -29,7 +29,7 @@ class PeriodStatsOverview extends StatsOverviewWidget
     }
 
     /**
-     * Admins see 8 stats (two rows of 4), operators 6 (two rows of 3).
+     * Admins see 7 stats, operators 5; GridColumns spreads them over even rows.
      */
     protected function getColumns(): int
     {
@@ -78,11 +78,6 @@ class PeriodStatsOverview extends StatsOverviewWidget
                 ->chart($trend['collected_profit'])
                 ->color('success');
         }
-
-        $stats[] = Stat::make(__('Overdue now'), Money::format($position['overdue']))
-            ->description(trans_choice(':count entry past due date|:count entries past due date', $position['overdue_entries']))
-            ->descriptionIcon(Heroicon::OutlinedExclamationTriangle)
-            ->color($position['overdue_entries'] > 0 ? 'danger' : 'success');
 
         $stats[] = Stat::make(__('Outstanding from this period'), Money::format($summary['outstanding']))
             ->description(__('Still unpaid from entries made in this period'))

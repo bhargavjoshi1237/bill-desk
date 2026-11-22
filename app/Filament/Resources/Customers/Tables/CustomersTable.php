@@ -38,7 +38,8 @@ class CustomersTable
                 TextColumn::make('mobile')
                     ->label(__('Mobile'))
                     ->searchable()
-                    ->copyable(),
+                    ->copyable()
+                    ->placeholder('—'),
                 TextColumn::make('city')
                     ->label(__('City'))
                     ->searchable()
@@ -78,10 +79,6 @@ class CustomersTable
                     ->label(__('Has outstanding'))
                     ->toggle()
                     ->query(fn (Builder $query) => $query->whereHas('entries', fn (Builder $query) => $query->open())),
-                Filter::make('overdue')
-                    ->label(__('Has overdue entries'))
-                    ->toggle()
-                    ->query(fn (Builder $query) => $query->whereHas('entries', fn (Builder $query) => $query->overdue())),
                 SelectFilter::make('city')
                     ->label(__('City'))
                     ->options(fn (): array => Customer::query()->whereNotNull('city')->distinct()->orderBy('city')->pluck('city', 'city')->all())

@@ -115,17 +115,8 @@ class EntriesTable
                     ->summarize(Sum::make()->money()->label(__('Total'))),
                 TextColumn::make('status')
                     ->label(__('Status'))
-                    ->state(fn (Entry $record): EntryStatus => $record->displayStatus())
                     ->badge()
                     ->sortable(),
-                TextColumn::make('due_date')
-                    ->label(__('Due date'))
-                    ->date()
-                    ->sortable()
-                    ->description(fn (Entry $record): ?string => $record->isOverdue()
-                        ? trans_choice(':count day overdue|:count days overdue', $record->daysOverdue())
-                        : null)
-                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('creator.name')
                     ->label(__('Created by'))
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -134,12 +125,7 @@ class EntriesTable
                 self::dateRangeFilter(),
                 SelectFilter::make('status')
                     ->label(__('Status'))
-                    ->options(EntryStatus::class)
-                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
-                        EntryStatus::Overdue->value => $query->overdue(),
-                        null, '' => $query,
-                        default => $query->where('status', $data['value']),
-                    }),
+                    ->options(EntryStatus::class),
                 SelectFilter::make('portal_id')
                     ->label(__('Portal'))
                     ->relationship('portal', 'name')
@@ -235,8 +221,7 @@ class EntriesTable
             __('Received') => fn (Entry $e) => (float) $e->amount_received,
             __('Outstanding') => fn (Entry $e) => (float) $e->outstanding,
             __('Net profit') => fn (Entry $e) => (float) $e->net_profit,
-            __('Status') => fn (Entry $e) => $e->displayStatus(),
-            __('Due date') => fn (Entry $e) => $e->due_date,
+            __('Status') => fn (Entry $e) => $e->status,
             __('Paid on') => fn (Entry $e) => $e->paid_at,
             __('Portal transaction ID') => fn (Entry $e) => $e->reference,
             __('Notes') => fn (Entry $e) => $e->notes,

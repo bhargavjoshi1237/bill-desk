@@ -88,21 +88,12 @@ class EntriesRelationManager extends RelationManager
                     ->summarize(Sum::make()->money()->label(__('Total'))),
                 TextColumn::make('status')
                     ->label(__('Status'))
-                    ->state(fn (Entry $record): EntryStatus => $record->displayStatus())
                     ->badge(),
-                TextColumn::make('due_date')
-                    ->label(__('Due date'))
-                    ->date(),
             ])
             ->filters([
                 SelectFilter::make('status')
                     ->label(__('Status'))
-                    ->options(EntryStatus::class)
-                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
-                        EntryStatus::Overdue->value => $query->overdue(),
-                        null, '' => $query,
-                        default => $query->where('status', $data['value']),
-                    }),
+                    ->options(EntryStatus::class),
             ])
             ->headerActions([
                 Action::make('newEntry')

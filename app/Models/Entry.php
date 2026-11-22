@@ -26,7 +26,7 @@ use Spatie\Activitylog\Support\LogOptions;
 #[Fillable([
     'entry_date', 'customer_id', 'customer_card_id', 'bank_id', 'portal_id',
     'bill_amount', 'portal_charge_percent', 'service_charge_percent',
-    'due_date', 'reference', 'notes', 'created_by',
+    'reference', 'notes', 'created_by',
 ])]
 class Entry extends Model
 {
@@ -37,7 +37,6 @@ class Entry extends Model
     {
         return [
             'entry_date' => 'date',
-            'due_date' => 'date',
             'paid_at' => 'date',
             'bill_amount' => 'decimal:2',
             'portal_charge_percent' => 'decimal:3',
@@ -97,26 +96,6 @@ class Entry extends Model
         return $this;
     }
 
-    public function isOverdue(): bool
-    {
-        return $this->status !== EntryStatus::Paid
-            && $this->due_date !== null
-            && $this->due_date->lt(today());
-    }
-
-    /**
-     * The stored status, or Overdue when the due date has passed.
-     */
-    public function displayStatus(): EntryStatus
-    {
-        return $this->isOverdue() ? EntryStatus::Overdue : $this->status;
-    }
-
-    public function daysOverdue(): int
-    {
-        return $this->isOverdue() ? (int) $this->due_date->diffInDays(today()) : 0;
-    }
-
     /**
      * e.g. E-00042.
      */
@@ -129,14 +108,6 @@ class Entry extends Model
     protected function open(Builder $query): void
     {
         $query->where('outstanding', '>', 0);
-    }
-
-    #[Scope]
-    protected function overdue(Builder $query): void
-    {
-        $query->where('outstanding', '>', 0)
-            ->whereNotNull('due_date')
-            ->whereDate('due_date', '<', today());
     }
 
     #[Scope]

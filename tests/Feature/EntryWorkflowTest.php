@@ -18,7 +18,6 @@ use App\Models\Entry;
 use App\Models\Payment;
 use App\Models\Portal;
 use App\Models\User;
-use App\Models\WalletTransaction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -82,7 +81,6 @@ class EntryWorkflowTest extends TestCase
         $this->assertSame('42000.00', $entry->outstanding);
         $this->assertSame('800.00', $entry->net_profit);
         $this->assertSame(EntryStatus::Partial, $entry->status);
-        $this->assertSame('2026-11-01', $entry->due_date->toDateString());
         $this->assertSame($this->admin->id, $entry->created_by);
 
         $payment = $entry->payments()->sole();
@@ -293,43 +291,43 @@ class EntryWorkflowTest extends TestCase
         $unpaid = $this->entry(bill: 1000);
         $paid = $this->entry(bill: 2000);
         Payment::factory()->create(['entry_id' => $paid->id, 'amount' => 2050]);
-        $overdue = $this->entry(bill: 3000, attributes: ['entry_date' => today()->subDays(20), 'due_date' => today()->subDays(3)]);
+        // Old entries are never "overdue" any more: due dates were removed.
+        $old = $this->entry(bill: 3000, attributes: ['entry_date' => today()->subDays(20)]);
 
         Livewire::test(ListEntries::class)
             ->set('activeTab', 'paid')
             ->assertCanSeeTableRecords([$paid])
-            ->assertCanNotSeeTableRecords([$unpaid, $overdue])
-            ->set('activeTab', 'overdue')
-            ->assertCanSeeTableRecords([$overdue])
-            ->assertCanNotSeeTableRecords([$unpaid, $paid]);
+            ->assertCanNotSeeTableRecords([$unpaid, $old])
+            ->set('activeTab', 'unpaid')
+            ->assertCanSeeTableRecords([$unpaid, $old])
+            ->assertCanNotSeeTableRecords([$paid]);
     }
 
-    public function test_status_filter_supports_overdue(): void
+    public function test_status_filter_matches_the_stored_status(): void
     {
-        $current = $this->entry(bill: 1000);
-        $overdue = $this->entry(bill: 3000, attributes: ['entry_date' => today()->subDays(20), 'due_date' => today()->subDays(3)]);
+        $unpaid = $this->entry(bill: 1000);
+        $paid = $this->entry(bill: 2000);
+        Payment::factory()->create(['entry_id' => $paid->id, 'amount' => 2050]);
 
         Livewire::test(ListEntries::class)
-            ->filterTable('status', 'overdue')
-            ->assertCanSeeTableRecords([$overdue])
-            ->assertCanNotSeeTableRecords([$current]);
+            ->filterTable('status', EntryStatus::Paid->value)
+            ->assertCanSeeTableRecords([$paid])
+            ->assertCanNotSeeTableRecords([$unpaid]);
     }
 
-    public function test_wallet_warning_after_an_entry_that_overdraws_the_portal(): void
+    public function test_card_is_a_payment_mode(): void
     {
-        WalletTransaction::factory()->create(['portal_id' => $this->mos->id, 'amount' => 50000]);
+        $entry = $this->entry(bill: 1000);
 
-        Livewire::test(CreateEntry::class)
-            ->fillForm([
-                'customer_id' => $this->customer->id,
-                'bill_amount' => 80000,
-                'portal_id' => $this->mos->id,
+        Livewire::test(ListEntries::class)
+            ->callAction(TestAction::make('recordPayment')->table($entry), [
+                'paid_on' => today()->toDateString(),
+                'amount' => 500,
+                'mode' => PaymentMode::Card->value,
             ])
-            ->call('create')
-            ->assertHasNoFormErrors()
-            ->assertNotified('Portal wallet balance is negative');
+            ->assertHasNoFormErrors();
 
-        $this->assertSame('-31200.00', $this->mos->walletBalance());   // 50,000 − (80,000 + 1,200)
+        $this->assertSame(PaymentMode::Card, $entry->payments()->sole()->mode);
     }
 
     public function test_operators_cannot_delete_entries_but_admins_can(): void

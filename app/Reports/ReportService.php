@@ -65,8 +65,6 @@ final class ReportService
         return [
             'outstanding' => self::money(Entry::query()->open()->sum('outstanding')),
             'open_entries' => Entry::query()->open()->count(),
-            'overdue' => self::money(Entry::query()->overdue()->sum('outstanding')),
-            'overdue_entries' => Entry::query()->overdue()->count(),
             'customers_owing' => Entry::query()->open()->distinct()->count('customer_id'),
         ];
     }
@@ -207,8 +205,7 @@ final class ReportService
     }
 
     /**
-     * Customers who still owe money, with how much, how much is overdue and
-     * their oldest unpaid entry.
+     * Customers who still owe money, with how much and their oldest unpaid entry.
      *
      * @return Builder<Customer>
      */
@@ -217,7 +214,6 @@ final class ReportService
         return Customer::query()
             ->whereHas('entries', fn (Builder $query) => $query->open())
             ->withSum(['entries as outstanding_total' => fn (Builder $query) => $query->open()], 'outstanding')
-            ->withSum(['entries as overdue_total' => fn (Builder $query) => $query->overdue()], 'outstanding')
             ->withCount(['entries as open_entries_count' => fn (Builder $query) => $query->open()])
             ->withMin(['entries as oldest_open_entry_date' => fn (Builder $query) => $query->open()], 'entry_date');
     }

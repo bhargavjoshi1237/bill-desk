@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Entries\Schemas;
 
-use App\Enums\EntryStatus;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Models\Entry;
 use App\Support\Money;
@@ -74,30 +73,23 @@ class EntryInfolist
                                     ->date(),
                                 TextEntry::make('status')
                                     ->label(__('Status'))
-                                    ->state(fn (Entry $record): EntryStatus => $record->displayStatus())
                                     ->badge(),
-                                TextEntry::make('due_date')
-                                    ->label(__('Repayment due date'))
-                                    ->date()
-                                    ->placeholder('—')
-                                    ->helperText(fn (Entry $record): ?string => $record->isOverdue()
-                                        ? trans_choice(':count day overdue|:count days overdue', $record->daysOverdue())
-                                        : null)
-                                    ->color(fn (Entry $record): ?string => $record->isOverdue() ? 'danger' : null),
                                 TextEntry::make('paid_at')
                                     ->label(__('Fully paid on'))
                                     ->date()
                                     ->placeholder('—'),
-                                TextEntry::make('reference')
-                                    ->label(__('Portal transaction ID'))
-                                    ->placeholder('—')
-                                    ->copyable(),
                                 TextEntry::make('creator.name')
                                     ->label(__('Created by'))
                                     ->placeholder('—'),
                                 TextEntry::make('created_at')
                                     ->label(__('Created at'))
                                     ->dateTime(),
+                                // Full width so the two-column rows above stay even.
+                                TextEntry::make('reference')
+                                    ->label(__('Portal transaction ID'))
+                                    ->placeholder('—')
+                                    ->copyable()
+                                    ->columnSpanFull(),
                                 TextEntry::make('notes')
                                     ->label(__('Notes'))
                                     ->placeholder('—')
@@ -115,7 +107,8 @@ class EntryInfolist
                                 TextEntry::make('customer.mobile')
                                     ->label(__('Mobile'))
                                     ->copyable()
-                                    ->url(fn (Entry $record): string => 'tel:'.$record->customer?->mobile),
+                                    ->placeholder('—')
+                                    ->url(fn (Entry $record): ?string => $record->customer?->mobile ? 'tel:'.$record->customer->mobile : null),
                                 TextEntry::make('bank.name')
                                     ->label(__('Bank')),
                                 TextEntry::make('card')

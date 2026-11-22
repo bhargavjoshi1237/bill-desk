@@ -34,7 +34,6 @@ class ListEntries extends ListRecords
             'all' => Tab::make(__('All')),
             'unpaid' => $tab(EntryStatus::Unpaid, fn (Builder $query) => $query->where('status', EntryStatus::Unpaid)),
             'partial' => $tab(EntryStatus::Partial, fn (Builder $query) => $query->where('status', EntryStatus::Partial)),
-            'overdue' => $tab(EntryStatus::Overdue, fn (Builder $query) => $query->overdue()),
             'paid' => $tab(EntryStatus::Paid, fn (Builder $query) => $query->where('status', EntryStatus::Paid)),
         ];
     }

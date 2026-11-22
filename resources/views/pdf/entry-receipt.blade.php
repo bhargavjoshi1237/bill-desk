@@ -1,5 +1,5 @@
 @extends('pdf.layout')
-@php use App\Support\Money; $status = $entry->displayStatus(); @endphp
+@php use App\Support\Money; $status = $entry->status; @endphp
 
 @section('title', 'Receipt')
 @section('subtitle', $entry->number().' · '.$entry->entry_date->format('d-m-Y'))
@@ -11,7 +11,7 @@
                 <h2>Customer</h2>
                 <table class="kv">
                     <tr><td class="label">Name</td><td><strong>{{ $entry->customer->name }}</strong></td></tr>
-                    <tr><td class="label">Mobile</td><td>{{ $entry->customer->mobile }}</td></tr>
+                    <tr><td class="label">Mobile</td><td>{{ $entry->customer->mobile ?? '—' }}</td></tr>
                     <tr><td class="label">Card</td><td>{{ $entry->card?->label() ?: $entry->bank->name }}</td></tr>
                     @if ($entry->reference)<tr><td class="label">Portal transaction ID</td><td>{{ $entry->reference }}</td></tr>@endif
                 </table>
@@ -20,7 +20,6 @@
                 <h2>Status</h2>
                 <table class="kv">
                     <tr><td class="label">Status</td><td><span class="badge badge-{{ $status->value }}">{{ $status->getLabel() }}</span></td></tr>
-                    <tr><td class="label">Repayment due</td><td>{{ $entry->due_date?->format('d-m-Y') ?? '—' }}</td></tr>
                     @if ($entry->paid_at)<tr><td class="label">Fully paid on</td><td>{{ $entry->paid_at->format('d-m-Y') }}</td></tr>@endif
                     <tr><td class="label">Prepared by</td><td>{{ $entry->creator?->name ?? '—' }}</td></tr>
                 </table>

@@ -9,6 +9,7 @@ enum PaymentMode: string implements HasColor, HasLabel
 {
     case Cash = 'cash';
     case Upi = 'upi';
+    case Card = 'card';
     case BankTransfer = 'bank_transfer';
     case Cheque = 'cheque';
     case Other = 'other';
@@ -18,6 +19,7 @@ enum PaymentMode: string implements HasColor, HasLabel
         return match ($this) {
             self::Cash => __('Cash'),
             self::Upi => __('UPI'),
+            self::Card => __('Card'),
             self::BankTransfer => __('Bank Transfer'),
             self::Cheque => __('Cheque'),
             self::Other => __('Other'),
@@ -29,6 +31,7 @@ enum PaymentMode: string implements HasColor, HasLabel
         return match ($this) {
             self::Cash => 'success',
             self::Upi => 'info',
+            self::Card => 'danger',
             self::BankTransfer => 'primary',
             self::Cheque => 'warning',
             self::Other => 'gray',

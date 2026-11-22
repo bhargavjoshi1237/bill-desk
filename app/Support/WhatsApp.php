@@ -17,7 +17,8 @@ final class WhatsApp
             '{name}' => $customer->name,
             '{amount}' => Money::format($amount ?? $customer->totalOutstanding()),
             '{business}' => Settings::businessName(),
-            '{due_date}' => $entry?->due_date?->format('d-m-Y') ?? '',
+            // Due dates were removed; blank out the placeholder in templates saved before that.
+            '{due_date}' => '',
             '{entry}' => $entry?->number() ?? '',
         ]);
 

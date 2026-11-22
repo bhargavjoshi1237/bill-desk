@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Enums\PaymentMode;
 use App\Enums\UserRole;
-use App\Enums\WalletTransactionType;
 use App\Models\Bank;
 use App\Models\Customer;
 use App\Models\Entry;
@@ -47,7 +46,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'MOS', 'charge_percent' => 1.5],
             ['name' => 'Digi Seva', 'charge_percent' => 1.7],
         ])->mapWithKeys(fn (array $portal): array => [
-            $portal['name'] => Portal::query()->firstOrCreate(['name' => $portal['name']], [...$portal, 'low_balance_alert' => 50000]),
+            $portal['name'] => Portal::query()->firstOrCreate(['name' => $portal['name']], $portal),
         ]);
 
         if (Entry::query()->exists()) {
@@ -55,16 +54,6 @@ class DatabaseSeeder extends Seeder
         }
 
         $date = Carbon::create(2026, 10, 25);
-
-        foreach (['MOS' => 500000, 'Digi Seva' => 200000] as $portal => $amount) {
-            $portals[$portal]->walletTransactions()->create([
-                'transaction_date' => $date,
-                'type' => WalletTransactionType::TopUp,
-                'amount' => $amount,
-                'notes' => 'Opening balance (sample data)',
-                'created_by' => $admin->id,
-            ]);
-        }
 
         // Date, customer, mobile, bank, card, bill, portal, portal %, amount received.
         $rows = [
@@ -86,7 +75,6 @@ class DatabaseSeeder extends Seeder
                 'bill_amount' => $bill,
                 'portal_charge_percent' => $portalPercent,
                 'service_charge_percent' => 2.5,
-                'due_date' => $date->copy()->addDays(7),
                 'created_by' => $admin->id,
             ]);
 

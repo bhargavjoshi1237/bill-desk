@@ -97,12 +97,6 @@ class ManageSettings extends Page
                             ->maxValue(100)
                             ->step(0.001)
                             ->required(),
-                        TextInput::make('default_due_days')
-                            ->label(__('Repayment due after (days)'))
-                            ->integer()
-                            ->minValue(0)
-                            ->maxValue(365)
-                            ->required(),
                     ])
                     ->columns(2),
                 Section::make(__('WhatsApp reminder'))
@@ -111,7 +105,7 @@ class ManageSettings extends Page
                             ->label(__('Message template'))
                             ->rows(3)
                             ->required()
-                            ->helperText(__('Placeholders: {name}, {amount}, {business}, {due_date}, {entry}')),
+                            ->helperText(__('Placeholders: {name}, {amount}, {business}, {entry}')),
                     ]),
             ])
             ->statePath('data');

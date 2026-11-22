@@ -49,7 +49,6 @@ class PanelPagesTest extends TestCase
         return [
             'portals' => ['/admin/portals'],
             'new portal' => ['/admin/portals/create'],
-            'wallet' => ['/admin/wallet-transactions'],
             'banks' => ['/admin/banks'],
             'users' => ['/admin/users'],
             'settings' => ['/admin/settings'],

@@ -23,18 +23,18 @@ final class OutstandingExport
 
         return [
             __('Customers') => [
-                'headings' => [__('Customer'), __('Mobile'), __('Open entries'), __('Outstanding'), __('Overdue'), __('Oldest unpaid entry'), __('Age (days)')],
+                'headings' => [__('Customer'), __('Mobile'), __('Open entries'), __('Outstanding'), __('Oldest unpaid entry'), __('Age (days)')],
                 'rows' => $data['customers']->map(fn (Customer $c): array => [
                     $c->name, $c->mobile, (int) $c->open_entries_count, (float) $c->outstanding_total,
-                    (float) $c->overdue_total, $c->oldest_open_entry_date ? Carbon::parse($c->oldest_open_entry_date) : null,
+                    $c->oldest_open_entry_date ? Carbon::parse($c->oldest_open_entry_date) : null,
                     OutstandingCustomersTable::age($c),
                 ]),
             ],
             __('Open entries') => [
-                'headings' => [__('Entry #'), __('Date'), __('Customer'), __('Mobile'), __('Bank'), __('Total due'), __('Received'), __('Outstanding'), __('Due date'), __('Status')],
+                'headings' => [__('Entry #'), __('Date'), __('Customer'), __('Mobile'), __('Bank'), __('Total due'), __('Received'), __('Outstanding'), __('Status')],
                 'rows' => $data['entries']->map(fn (Entry $e): array => [
                     $e->number(), $e->entry_date, $e->customer?->name, $e->customer?->mobile, $e->bank?->name,
-                    (float) $e->total_due, (float) $e->amount_received, (float) $e->outstanding, $e->due_date, $e->displayStatus(),
+                    (float) $e->total_due, (float) $e->amount_received, (float) $e->outstanding, $e->status,
                 ]),
             ],
             __('Aging') => [

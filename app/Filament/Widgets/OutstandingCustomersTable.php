@@ -7,10 +7,8 @@ use App\Filament\Actions\WhatsAppReminderAction;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Models\Customer;
 use App\Reports\ReportService;
-use App\Support\Money;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
@@ -41,7 +39,8 @@ class OutstandingCustomersTable extends TableWidget
                 TextColumn::make('mobile')
                     ->label(__('Mobile'))
                     ->searchable()
-                    ->copyable(),
+                    ->copyable()
+                    ->placeholder('—'),
                 TextColumn::make('open_entries_count')
                     ->label(__('Open entries'))
                     ->alignCenter(),
@@ -51,12 +50,6 @@ class OutstandingCustomersTable extends TableWidget
                     ->alignEnd()
                     ->weight('bold')
                     ->color('danger')
-                    ->sortable(),
-                TextColumn::make('overdue_total')
-                    ->label(__('Overdue'))
-                    ->money()
-                    ->alignEnd()
-                    ->placeholder(Money::format(0))
                     ->sortable(),
                 TextColumn::make('oldest_open_entry_date')
                     ->label(__('Oldest unpaid entry'))
@@ -93,10 +86,6 @@ class OutstandingCustomersTable extends TableWidget
                             default => $query,
                         };
                     }),
-                Filter::make('overdue')
-                    ->label(__('Only customers with overdue entries'))
-                    ->toggle()
-                    ->query(fn (Builder $query) => $query->whereHas('entries', fn (Builder $q) => $q->overdue())),
             ])
             ->recordActions([
                 WhatsAppReminderAction::make()->iconButton(),

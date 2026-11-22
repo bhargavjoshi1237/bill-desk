@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
-use App\Enums\WalletTransactionType;
 use App\Filament\Pages\ManageSettings;
 use App\Filament\Resources\Activities\Pages\ListActivities;
 use App\Filament\Resources\Banks\Pages\ManageBanks;
@@ -41,11 +40,10 @@ class AdministrationTest extends TestCase
     public function test_settings_are_saved_and_used_as_defaults_for_new_entries(): void
     {
         Livewire::test(ManageSettings::class)
-            ->assertSchemaStateSet(['default_service_charge_percent' => 2.5, 'default_due_days' => 7])
+            ->assertSchemaStateSet(['default_service_charge_percent' => 2.5])
             ->fillForm([
                 'business_name' => 'Shree Bill Desk',
                 'default_service_charge_percent' => 3,
-                'default_due_days' => 15,
             ])
             ->call('save')
             ->assertHasNoFormErrors();
@@ -54,10 +52,7 @@ class AdministrationTest extends TestCase
         $this->assertSame(3.0, Settings::serviceChargePercent());
 
         Livewire::test(CreateEntry::class)
-            ->assertSchemaStateSet([
-                'service_charge_percent' => 3.0,
-                'due_date' => today()->addDays(15)->toDateString(),
-            ]);
+            ->assertSchemaStateSet(['service_charge_percent' => 3.0]);
     }
 
     public function test_admin_creates_an_operator(): void
@@ -101,34 +96,21 @@ class AdministrationTest extends TestCase
             ->assertActionVisible(TestAction::make('delete')->table($other));
     }
 
-    public function test_wallet_top_up_updates_the_balance(): void
+    public function test_portals_have_no_wallet(): void
     {
         $portal = Portal::factory()->create(['name' => 'MOS', 'charge_percent' => 1.5]);
         Entry::factory()->create(['portal_id' => $portal->id, 'bill_amount' => 100000, 'portal_charge_percent' => 1.5]);
 
-        $this->assertSame('-101500.00', $portal->walletBalance());
-        $this->assertTrue($portal->isLowOnBalance());
-
         Livewire::test(ListPortals::class)
-            ->callAction(TestAction::make('topUp')->table($portal), [
-                'transaction_date' => today()->toDateString(),
-                'type' => WalletTransactionType::TopUp->value,
-                'amount' => 200000,
-            ])
-            ->assertHasNoFormErrors();
+            ->assertCanSeeTableRecords([$portal])
+            ->assertActionDoesNotExist(TestAction::make('topUp')->table($portal))
+            ->assertDontSee('Wallet balance');
 
         Livewire::test(ViewPortal::class, ['record' => $portal->id])
-            ->callAction('topUp', [
-                'transaction_date' => today()->toDateString(),
-                'type' => WalletTransactionType::Withdrawal->value,
-                'amount' => 500,
-            ]);
+            ->assertActionDoesNotExist('topUp')
+            ->assertDontSee('Current balance');
 
-        $this->assertSame('98000.00', $portal->walletBalance());
-        $this->assertFalse($portal->isLowOnBalance());
-
-        $portal->update(['low_balance_alert' => 100000]);
-        $this->assertTrue($portal->isLowOnBalance());
+        $this->get('/admin/wallet-transactions')->assertNotFound();
     }
 
     public function test_banks_in_use_cannot_be_deleted(): void
