@@ -8,7 +8,6 @@ use App\Filament\Actions\PrintReceiptAction;
 use App\Filament\Actions\RecordPaymentAction;
 use App\Filament\Actions\WhatsAppReminderAction;
 use App\Models\Entry;
-use App\Models\Portal;
 use App\Support\Money;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -34,7 +33,7 @@ class EntriesTable
         $isAdmin = fn (): bool => auth()->user()->isAdmin();
 
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['customer', 'bank', 'portal', 'receivedPortal', 'card']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['customer', 'bank', 'portal', 'card']))
             ->defaultSort(fn (Builder $query) => $query->orderByDesc('entry_date')->orderByDesc('id'))
             ->columns([
                 TextColumn::make('id')
@@ -55,8 +54,7 @@ class EntriesTable
                     ->label(__('Bank / portal'))
                     ->description(fn (Entry $record): string => collect([
                         $record->card?->last_four ? '•••• '.$record->card->last_four : null,
-                        // Sent by → received in.
-                        collect([$record->portal?->name, $record->receivedPortal?->name])->filter()->implode(' → '),
+                        $record->portal?->name,
                     ])->filter()->implode(' · '))
                     ->sortable()
                     ->toggleable(),
@@ -142,17 +140,11 @@ class EntriesTable
                         null, '' => $query,
                         default => $query->where('status', $data['value']),
                     }),
-                // Matches entries that were sent by or received in the chosen portals.
                 SelectFilter::make('portal_id')
-                    ->label(__('Portal / account'))
-                    ->options(fn (): array => Portal::query()->orderBy('name')->pluck('name', 'id')->all())
+                    ->label(__('Portal'))
+                    ->relationship('portal', 'name')
                     ->multiple()
-                    ->query(fn (Builder $query, array $data) => $query->when(
-                        $data['values'] ?? null,
-                        fn (Builder $query, array $ids) => $query->where(fn (Builder $query) => $query
-                            ->whereIn('portal_id', $ids)
-                            ->orWhereIn('received_portal_id', $ids)),
-                    )),
+                    ->preload(),
                 SelectFilter::make('bank_id')
                     ->label(__('Bank'))
                     ->relationship('bank', 'name')
@@ -233,8 +225,7 @@ class EntriesTable
             __('Mobile') => fn (Entry $e) => $e->customer?->mobile,
             __('Bank') => fn (Entry $e) => $e->bank?->name,
             __('Card') => fn (Entry $e) => $e->card?->last_four ? '•••• '.$e->card->last_four : null,
-            __('Sent by') => fn (Entry $e) => $e->portal?->name,
-            __('Received in') => fn (Entry $e) => $e->receivedPortal?->name,
+            __('Portal') => fn (Entry $e) => $e->portal?->name,
             __('Bill amount') => fn (Entry $e) => (float) $e->bill_amount,
             __('Portal %') => fn (Entry $e) => (float) $e->portal_charge_percent,
             __('Portal deduction') => fn (Entry $e) => (float) $e->portal_deduction,

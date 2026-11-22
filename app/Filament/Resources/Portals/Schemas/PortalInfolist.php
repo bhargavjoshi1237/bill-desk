@@ -18,9 +18,9 @@ class PortalInfolist
     {
         return $schema
             ->components([
-                Section::make(__('Balance'))
+                Section::make(__('Wallet'))
                     ->icon(Heroicon::OutlinedWallet)
-                    ->description(__('Balance = top-ups − withdrawals + bill amounts received − (bill + portal deduction) of entries sent.'))
+                    ->description(__('Balance = top-ups − withdrawals − (bill + portal deduction) of every entry.'))
                     ->schema([
                         TextEntry::make('wallet_top_ups')
                             ->label(__('Total top-ups'))
@@ -31,13 +31,8 @@ class PortalInfolist
                             ->label(__('Withdrawals / adjustments'))
                             ->state(fn (Portal $record): string => Money::format($record->totalWithdrawals()))
                             ->size(TextSize::Large),
-                        TextEntry::make('wallet_received')
-                            ->label(__('Received for entries'))
-                            ->state(fn (Portal $record): string => Money::format($record->totalReceived()))
-                            ->color('success')
-                            ->size(TextSize::Large),
                         TextEntry::make('wallet_used')
-                            ->label(__('Sent for entries'))
+                            ->label(__('Used for entries'))
                             ->state(fn (Portal $record): string => Money::format($record->totalUsed()))
                             ->color('danger')
                             ->size(TextSize::Large),
@@ -46,19 +41,14 @@ class PortalInfolist
                             ->state(fn (Portal $record): string => Money::format($record->walletBalance()))
                             ->color(fn (Portal $record): string => $record->isLowOnBalance() ? 'danger' : 'success')
                             ->weight(FontWeight::Bold)
-                            ->size(TextSize::Large)
-                            // Odd one out on two-column screens, so it takes the whole last row.
-                            ->columnSpan(['default' => 2, 'xl' => 1]),
+                            ->size(TextSize::Large),
                     ])
-                    ->columns(['default' => 2, 'xl' => 5])
+                    ->columns(['default' => 2, 'lg' => 4])
                     ->columnSpanFull(),
                 Section::make(__('Portal details'))
                     ->schema([
                         TextEntry::make('name')
-                            ->label(__('Name')),
-                        TextEntry::make('type')
-                            ->label(__('Type'))
-                            ->badge(),
+                            ->label(__('Portal name')),
                         TextEntry::make('charge_percent')
                             ->label(__('Default portal charge'))
                             ->formatStateUsing(fn ($state): string => Money::percent($state)),
@@ -70,11 +60,8 @@ class PortalInfolist
                             ->label(__('Active'))
                             ->boolean(),
                         TextEntry::make('entries_count')
-                            ->label(__('Entries sent'))
+                            ->label(__('Entries'))
                             ->state(fn (Portal $record): int => $record->entries()->count()),
-                        TextEntry::make('received_entries_count')
-                            ->label(__('Entries received'))
-                            ->state(fn (Portal $record): int => $record->receivedEntries()->count()),
                         TextEntry::make('entries_volume')
                             ->label(__('Total bill volume'))
                             ->state(fn (Portal $record): string => Money::format($record->entries()->sum('bill_amount'))),
@@ -83,7 +70,7 @@ class PortalInfolist
                             ->placeholder('—')
                             ->columnSpanFull(),
                     ])
-                    ->columns(['default' => 2, 'lg' => 4])
+                    ->columns(['default' => 2, 'lg' => 3])
                     ->columnSpanFull(),
             ]);
     }

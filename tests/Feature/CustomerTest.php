@@ -134,10 +134,10 @@ class CustomerTest extends TestCase
 
         $settled = Customer::factory()->create(['name' => 'Settled']);
         $entry = Entry::factory()->create(['customer_id' => $settled->id, 'bill_amount' => 1000]);
-        Payment::factory()->create(['entry_id' => $entry->id, 'amount' => 40]);   // 15 portal + 25 service
+        Payment::factory()->create(['entry_id' => $entry->id, 'amount' => 1025]);
 
         Livewire::test(ListCustomers::class)
-            ->assertSee('₹3,200.00')   // 1,200 portal + 2,000 service
+            ->assertSee('₹82,000.00')
             ->filterTable('owes_money', true)
             ->assertCanSeeTableRecords([$owing])
             ->assertCanNotSeeTableRecords([$settled]);
@@ -152,7 +152,7 @@ class CustomerTest extends TestCase
 
         $this->assertStringStartsWith('https://wa.me/919876500003?text=', $url);
         $this->assertStringContainsString(rawurlencode('Namaste Rajesh'), $url);
-        $this->assertStringContainsString(rawurlencode('₹3,200.00'), $url);
+        $this->assertStringContainsString(rawurlencode('₹82,000.00'), $url);
 
         Livewire::test(ViewCustomer::class, ['record' => $customer->id])
             ->assertActionVisible('whatsappReminder')

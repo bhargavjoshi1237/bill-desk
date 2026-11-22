@@ -35,12 +35,12 @@ class PortalResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return __('Portal / account');
+        return __('Portal');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Portals & accounts');
+        return __('Portals');
     }
 
     public static function getNavigationBadge(): ?string
